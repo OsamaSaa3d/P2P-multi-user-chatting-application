@@ -14,6 +14,8 @@ import hashlib
 import string
 from db import DB
 import random
+import curses
+
 # Server side of peer
 class PeerServer(threading.Thread):
 
@@ -365,11 +367,11 @@ class peerMain:
                 while True:
                     # each one of the following test has a point.
                     # port number has to get all three of these point to pass.
-                    print(f"Some of the available port numbers are: {self.get_random_port()} or {self.get_random_port()} or {self.get_random_port()}")
                     counter = 0
                     # check if port number is a positive number
                     if self.is_digit(peerServerPort) == False:
                         print("Port number should be a positive number.")
+                        print(f"Some of the available port numbers are: {self.get_random_port()} or {self.get_random_port()} or {self.get_random_port()}")
                         peerServerPort = input("Enter a port number for peer server: ")
                         continue
                     else:
@@ -379,6 +381,7 @@ class peerMain:
                     # check if port number is in private ports range
                     if peerServerPort < 1024 or peerServerPort > 65535:
                         print("Port number should be between 1024 and 65535.")
+                        print(f"Some of the available port numbers are: {self.get_random_port()} or {self.get_random_port()} or {self.get_random_port()}")
                         peerServerPort = input("Enter a port number for peer server: ")
                         continue
                     else:
@@ -387,6 +390,7 @@ class peerMain:
                     # check if port number is already in use
                     if not self.is_port_available(peerServerPort):
                         print("Port number is already in use. Please choose another one.")
+                        print(f"Some of the available port numbers are: {self.get_random_port()} or {self.get_random_port()} or {self.get_random_port()}")
                         peerServerPort = input("Enter a port number for peer server: ")
                         continue
                     else:
