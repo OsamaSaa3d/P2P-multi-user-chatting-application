@@ -1,6 +1,8 @@
 import curses
 import time
 
+
+
 # positioning text and manipulating the cursor
 # def main(stdscr):
 #     stdscr.addstr(5, 10, "Press a key:")
@@ -41,16 +43,17 @@ import time
 # curses.wrapper(main)
 
 
-def main(stdscr):
-    stdscr.addstr(5, 10, "Dynamic Updates! Wait for 2 seconds...")
-    stdscr.refresh()
-    time.sleep(2)
+# def main(stdscr):
+#     stdscr.addstr(5, 10, "Dynamic Updates! Wait for 2 seconds...")
+#     stdscr.refresh()
+#     time.sleep(2)
 
-    stdscr.addstr(7, 10, "Updated Text!")
-    stdscr.refresh()
-    stdscr.getch()
+#     stdscr.addstr(7, 10, "Updated Text!")
+#     stdscr.refresh()
+#     stdscr.getch()
 
-curses.wrapper(main)
+
+# curses.wrapper(main)
 
 # text formatting
 # https://stackoverflow.com/questions/287871/how-to-print-colored-text-in-terminal-in-python
@@ -67,3 +70,13 @@ curses.wrapper(main)
 #     ENDC = '\033[0m'
 #     BOLD = '\033[1m'
 #     UNDERLINE = '\033[4m'
+#ana B(baheb)zomry
+
+# import re
+
+# input_string = "ana B(baheb)zomry aweeeeee"
+# match = re.search(r'B\((.*?)\)', input_string)
+
+# if match:
+#     result = match.group(1)
+#     print(result)
