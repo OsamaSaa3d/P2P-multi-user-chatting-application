@@ -191,6 +191,7 @@ class UDPServer(threading.Thread):
         self.tcpClientSocket.close()
         print("Removed " + self.username + " from online peers")
         db.user_logout(self.username)
+        del tcpThreads[self.username]
 
 
     # resets the timer for udp server
@@ -242,6 +243,10 @@ inputs = [tcpSocket, udpSocket]
 
 # log file initialization
 logging.basicConfig(filename="registry.log", level=logging.INFO)
+
+# log out all users before starting in case server crashed
+if db.logout_all_users():
+    print("Logged out all users since server crashed.")
 
 # as long as at least a socket exists to listen registry runs
 while inputs:
