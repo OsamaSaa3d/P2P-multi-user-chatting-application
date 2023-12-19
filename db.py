@@ -52,4 +52,16 @@ class DB:
     def get_peer_ip_port(self, username):
         res = self.db.online_peers.find_one({"username": username})
         return (res["ip"], res["port"])
-    
+
+    # logs out all users in case of a server crash
+    # logs out all online users and returns True if any users were logged out, False otherwise
+    def logout_all_users(self):
+        # Check if there are online users before attempting to log them out
+        online_users_count = self.db.online_peers.count_documents({})
+        
+        if online_users_count > 0:
+            # Delete all documents from the online_peers collection
+            self.db.online_peers.delete_many({})
+            return True
+        else:
+            return False
