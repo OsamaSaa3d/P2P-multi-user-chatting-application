@@ -15,6 +15,7 @@ import string
 from db import DB
 import random
 import curses
+import re
 
 # Server side of peer
 class PeerServer(threading.Thread):
@@ -294,13 +295,25 @@ class peerMain:
     # peer initializations
     def __init__(self):
         # ip address of the registry
-        self.registryName = input("Enter IP address of registry: ")
-        #self.registryName = 'localhost'
+        while True:
+            self.registryName = input("Enter IP address of registry: ")
+            if self.registryName == "q":
+                print("Program ended successfully.")
+                exit()
+            ip_address_pattern = re.compile(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$')
+            if not ip_address_pattern.match(self.registryName):
+                print("Invalid IP address, enter q to quit or try again.")
+            else:
+                break
         # port number of the registry
         self.registryPort = 15600
         # tcp socket connection to registry
         self.tcpClientSocket = socket(AF_INET, SOCK_STREAM)
-        self.tcpClientSocket.connect((self.registryName,self.registryPort))
+        try:
+            self.tcpClientSocket.connect((self.registryName,self.registryPort))
+        except:
+            print("Server not found or not active. Program ended.")
+            exit()
         # initializes udp socket which is used to send hello messages
         self.udpClientSocket = socket(AF_INET, SOCK_DGRAM)
         # udp port of the registry
@@ -579,7 +592,7 @@ class peerMain:
     # get some random avaliable port numbers
     def get_random_port(self):
         port = 0
-        while True:
+        while True: # can be optimized
             port = random.randint(1024, 65535)
             if self.is_port_available(port):
                 break
