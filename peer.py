@@ -287,6 +287,7 @@ class PeerClient(threading.Thread):
             logging.info("Send to " + self.ipToConnect + ":" + str(self.portToConnect) + " -> " + requestMessage)
             # sends the chat request
             is_disconnected = False
+            ###
             for i in range(3):
                 try:
                     self.tcpClientSocket.send(requestMessage.encode())
