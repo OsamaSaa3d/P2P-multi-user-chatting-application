@@ -123,7 +123,7 @@ class ClientThread(threading.Thread):
                         self.tcpClientSocket.close()
                         self.udpServer.timer.cancel()
                         break
-                    else: #//////////////////////////////////////////////////////////////////////////modify this and handle the case
+                    else:
                         self.tcpClientSocket.close()
                         break
                 #   SEARCH  #
@@ -191,7 +191,6 @@ class UDPServer(threading.Thread):
         self.tcpClientSocket.close()
         print("Removed " + self.username + " from online peers")
         db.user_logout(self.username)
-        del tcpThreads[self.username]
 
 
     # resets the timer for udp server
