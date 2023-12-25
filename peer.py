@@ -151,7 +151,7 @@ class PeerServer(threading.Thread):
                                 self.chattingClientName = messageReceived[2]
                                 # prints prompt for the incoming chat request
                                 print("Incoming chat request from " + self.chattingClientName + " >> ")
-                                print("Enter OK to accept or REJECT to reject:  ")
+                                print("Enter OK to accept, REJECT to reject : ")
                                 # makes isChatRequested = 1 which means that peer is chatting with someone
                                 self.isChatRequested = 1
                             # if the socket that we received the data does not belong to the peer that we are chatting with
@@ -304,8 +304,10 @@ class PeerClient(threading.Thread):
                 os._exit(1)
             #self.tcpClientSocket.send(requestMessage.encode()) ###################################################################
             print("Request message " + requestMessage + " is sent...")
+            
             # received a response from the peer which the request message is sent to
             self.responseReceived = self.tcpClientSocket.recv(1024).decode()
+                
             # logs the received message
             logging.info(
                 "Received from " + self.ipToConnect + ":" + str(self.portToConnect) + " -> " + self.responseReceived)
@@ -506,7 +508,7 @@ class peerMain:
                 try:
                     self.tcpClientSocket.connect((self.registryName, self.registryPort))
                     print("\033[92mConnected Successfully! Loading...\033[0m")
-                    time.sleep(3)
+                    time.sleep(2)
                     break
                 except:
                     print("\033[91mServer not found or not active. Try again or enter q to quit.\033[0m")
@@ -682,7 +684,17 @@ class peerMain:
             elif choice == "4" and self.isOnline:
                 os.system('cls')
                 time.sleep(0.2)
+                flag_search_for_self = False
+                
                 username = input("\033[96mUsername to be searched: \033[0m")
+                if username == self.loginCredentials[0]:
+                    print("\033[91mYou cannot search yourself.\033[0m")
+                    time.sleep(2)
+                    flag_search_for_self = True
+                    
+                if flag_search_for_self:
+                    continue
+                
                 searchStatus = self.searchUser(username)
                 # if user is found its ip address is shown to user
                 if searchStatus is not None and searchStatus != 0:
@@ -710,7 +722,15 @@ class peerMain:
             elif choice == "6" and self.isOnline:
                 os.system('cls')
                 time.sleep(0.2)
+                chat_with_self_flag = False
+               
                 username = input("\033[96mEnter the username of user to start chat: \033[0m")
+                if username == self.loginCredentials[0]:
+                    print("\033[91mYou cannot chat with yourself.\033[0m")
+                    chat_with_self_flag = True
+                    time.sleep(2)
+                if chat_with_self_flag:
+                    continue
                 searchStatus = self.searchUser(username)
                 # if searched user is found, then its ip address and port number is retrieved
                 # and a client thread is created
@@ -846,7 +866,7 @@ class peerMain:
         logging.info("Received from " + self.registryName + " -> " + response)
         if response == "login-success":
             print("\033[92mLogged in successfully...\033[0m")
-            time.sleep(1)
+            time.sleep(2)
             #os.system('cls')
             return 1
         elif response == "login-account-not-exist":
