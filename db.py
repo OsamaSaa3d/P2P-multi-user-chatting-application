@@ -1,33 +1,97 @@
 from pymongo import MongoClient
 
+
 # Includes database operations
 class DB:
-
 
     # db initializations
     def __init__(self):
         self.client = MongoClient('mongodb://localhost:27017/')
         self.db = self.client['p2p-chat']
         self.online_peers = self.db['online_peers']
+        self.rooms = self.db['rooms']
 
+    def get_all_rooms(self):
+        return self.db.rooms.find({})
+
+    def create_room(self, room_name, username):
+        room = {
+            'room_name': room_name,
+            'participants': [username]  # List to hold participants
+        }
+        self.db.rooms.insert_one(room)
+
+    def join_room(self, room_name, username):
+        # Find the room by name
+        room = self.db.rooms.find_one({'room_name': room_name})
+
+        if room:
+            # If room exists, update participants list
+            participants = room.get('participants', [])
+            if username not in participants:
+                participants.append(username)
+                # Update the participants field in the room
+                self.db.rooms.update_one(
+                    {'room_name': room_name},
+                    {'$set': {'participants': participants}}
+                )
+                return f"User {username} has joined the room {room_name}."
+            else:
+                return f"User {username} is already in the room {room_name}."
+        else:
+            return f"Room {room_name} does not exist."
+
+    def delete_room_by_name(self, room_name):
+        self.db.rooms.delete_one({'room_name': room_name})
+        # Deletes a single room that matches the provided room_name
+
+    def is_room_exist(self, roomname):
+        # Use count_documents or estimated_document_count
+        count = self.db.rooms.count_documents({'room_name': roomname})
+        return count > 0
+
+    def is_user_in_room(self, username, room_name):
+        room = self.db.rooms.find_one({'room_name': room_name})
+        if room:
+            participants = room.get('participants', [])
+            return username in participants
+        else:
+            return False
+
+    def get_available_rooms(self):
+        rooms = self.db.rooms.find({})
+        return rooms
+    def get_room_participants(self, room_name):
+        room = self.db.rooms.find_one({'room_name': room_name})
+        return room.get('participants', [])
+    def add_user_to_room(self, username, room_name):
+        room = self.db.rooms.find_one({'room_name': room_name})
+        participants = room.get('participants', [])
+        participants.append(username)
+        self.db.rooms.update_one(
+            {'room_name': room_name},
+            {'$set': {'participants': participants}}
+        )
+        return f"User {username} has joined the room {room_name}."
+
+    def delete_all_rooms(self):
+        self.db.rooms.delete_many({})
+        # Deletes all rooms in the 'rooms' collection
 
     # checks if an account with the username exists
     def is_account_exist(self, username):
         # Use count_documents or estimated_document_count
         count = self.db.accounts.count_documents({'username': username})
         return count > 0
-    
 
     # registers a user
     def register(self, username, password):
         account = {'username': username, 'password': password}
         self.db.accounts.insert_one(account)
 
-
     # retrieves the password for a given username
     def get_password(self, username):
         return self.db.accounts.find_one({"username": username})["password"]
-
 
     # checks if an account with the username online
     def is_account_online(self, username):
@@ -35,18 +99,15 @@ class DB:
         count = self.db.online_peers.count_documents({"username": username})
         return count > 0
 
-    
     # logs in the user
     def user_login(self, username, ip, port):
         online_peer = {'username': username, 'ip': ip, 'port': port}
         self.db.online_peers.insert_one(online_peer)
-    
 
     # logs out the user 
     def user_logout(self, username):
         # Remove the user from the online_peers collection
         self.db.online_peers.delete_one({"username": username})
-    
 
     # retrieves the ip address and the port number of the username
     def get_peer_ip_port(self, username):
@@ -58,7 +119,7 @@ class DB:
     def logout_all_users(self):
         # Check if there are online users before attempting to log them out
         online_users_count = self.db.online_peers.count_documents({})
-        
+
         if online_users_count > 0:
             # Delete all documents from the online_peers collection
             self.db.online_peers.delete_many({})

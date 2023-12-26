@@ -1,7 +1,7 @@
 
 '''
     ##  Implementation of registry
-    ##  150114822 - Eren Ulaş
+    ## 150114822 - Eren Ulaş
 '''
 
 from socket import *
@@ -57,8 +57,47 @@ class ClientThread(threading.Thread):
                     else:
                         db.register(message[1], message[2])
                         response = "join-success"
-                        logging.info("Send to " + self.ip + ":" + str(self.port) + " -> " + response) 
+                        logging.info("Send to " + self.ip + ":" + str(self.port)  + " -> " + response)
                         self.tcpClientSocket.send(response.encode())
+                elif message[0] == "CREATE-ROOM":
+                    # checks if the room already exists
+                    if db.is_room_exist(message[1]):
+                        response = "create-room-exist"
+                        logging.info("Send to " + self.ip + ":" + str(self.port) + " -> " + response)
+                        self.tcpClientSocket.send(response.encode())
+                    # if the room does not exist, then creates the room
+                    else:
+                        db.create_room(message[1], message[2])
+                        response = "create-room-success"
+                        logging.info("Send to " + self.ip + ":" + str(self.port) + " -> " + response)
+                        self.tcpClientSocket.send(response.encode())
+                elif message[0] == "JOIN-ROOM":
+                    # checks if the room exists
+                    if db.is_room_exist(message[1]):
+                        # checks if the user is already in the room
+                        if db.is_user_in_room(message[2], message[1]):
+                            response = "join-room-already-member"
+                            logging.info("Send to " + self.ip + ":" + str(self.port) + " -> " + response)
+                            self.tcpClientSocket.send(response.encode())
+                        # if the user is not in the room, then adds the user to the room
+                        else:
+                            db.add_user_to_room(message[2], message[1])
+                            response = "join-room-success"
+                            logging.info("Send to " + self.ip + ":" + str(self.port) + " -> " + response)
+                            self.tcpClientSocket.send(response.encode())
+                    # if the room does not exist, then sends the related response
+                    else:
+                        response = "join-room-not-exist"
+                        logging.info("Send to " + self.ip + ":" + str(self.port) + " -> " + response)
+                        self.tcpClientSocket.send(response.encode())
+                elif message[0] == "GET-AVAILABLE-ROOMS":
+                    rooms = db.get_all_rooms()
+                    response = "get-available-rooms-success"
+                    for room in rooms:
+                        response += " " + room['room_name']
+                    logging.info("Send to " + self.ip + ":" + str(self.port) + " -> " + response)
+                    self.tcpClientSocket.send(response.encode())
+
                 #   LOGIN    #
                 elif message[0] == "LOGIN":
                     # login-account-not-exist is sent to peer,
@@ -126,6 +165,7 @@ class ClientThread(threading.Thread):
                     else:
                         self.tcpClientSocket.close()
                         break
+
                 #   SEARCH  #
                 elif message[0] == "SEARCH":
                     # checks if an account with the username exists
@@ -146,6 +186,19 @@ class ClientThread(threading.Thread):
                         response = "search-user-not-found"
                         logging.info("Send to " + self.ip + ":" + str(self.port) + " -> " + response) 
                         self.tcpClientSocket.send(response.encode())
+
+                elif message[0] == "SEARCH-ROOM-USER":
+                    # checks if the room exists
+                    if db.is_room_exist(message[1]):
+                        # retrieves the room's participants
+                        participants = db.get_room_participants(message[1])
+                        if message[2] in participants:
+                            response = "search-user-room-success"
+                        else:
+                            response = "search-user-room-not-found"
+                        logging.info("Send to " + self.ip + ":" + str(self.port) + " -> " + response)
+                        self.tcpClientSocket.send(response.encode())
+
                 #   GET-ONLINE-USERS    #
                 elif message[0] == "GET-ONLINE-USERS":
                     # if there is no online user, then sends no-online-user response

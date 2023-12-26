@@ -1,7 +1,5 @@
 '''
-    ##  Implementation of peer
-    ##  Each peer has a client and a server side that runs on different threads
-    ##  150114822 - Eren Ulaş
+
 '''
 import os
 import sys
@@ -570,14 +568,18 @@ class peerMain:
                 #               "\033[3mGet Online Users: \033[0m3\n\033[3mStart a chat: \033[0m"
                 #               "4\n")
                 print("\033[1m\033[4mChoose an option\033[0m: \033[0m\n")
-                print("1) Logout\n2) Search for a user\n3) Show online users\n4) Start a chat\n")
+                print("1) Logout\n2) Search for a user\n3) Show online users\n4) Start a chat\n5) Create a chat room\n6) Join a chat room\n7) Show Available Rooms\n8) Room Chat\n")
                 choice = input('\033[94m>>> \033[0m')
 
                 switch_dict = {
                     "1": "3",
                     "2": "4",
                     "3": "5",
-                    "4": "6"
+                    "4": "6",
+                    "5": "7",
+                    "6": "8",
+                    "7": "9",
+                    "8": "10",
                 }
                 # Check if the choice is in the dictionary, otherwise set it to the original value
                 choice = switch_dict.get(choice, choice)
@@ -588,7 +590,6 @@ class peerMain:
                 os.system('cls')
                 time.sleep(0.2)
                 username = input("\033[1mUsername: \033[0m")
-                #password = input("\033[1mPassword: \033[0m")
                 password = pwinput.pwinput(prompt='\033[1mPassword: \033[0m', mask='*')
 
                 # checks if the password is valid
@@ -606,7 +607,6 @@ class peerMain:
                 os.system('cls')
                 time.sleep(0.2)
                 username = input("\033[1mUsername: \033[0m")
-                #password = input("\033[1mPassword: \033[0m")
                 password = pwinput.pwinput(prompt='\033[1mPassword: \033[0m', mask='*')
                 # asks for the port number for server's tcp socket
                 #peerServerPort = input("Enter a port number for peer server: ")
@@ -708,7 +708,7 @@ class peerMain:
                 if response[0] == "no-online-users":
                     print("\033[91mNo online users...\033[0m")
                 elif response[0] == "get-online-users-success":
-                    # list of online users returned includes user who asks for the list, we we remove him from the list
+                    # list of online users returned includes user who asks for the list, we remove him from the list
                     online_users = [name for name in response[1:] if name != self.loginCredentials[0]]
                     if len(online_users) == 0:
                         print("\033[91mNo online users...\033[0m")
@@ -723,7 +723,6 @@ class peerMain:
                 os.system('cls')
                 time.sleep(0.2)
                 chat_with_self_flag = False
-               
                 username = input("\033[96mEnter the username of user to start chat: \033[0m")
                 if username == self.loginCredentials[0]:
                     print("\033[91mYou cannot chat with yourself.\033[0m")
@@ -746,6 +745,49 @@ class peerMain:
             # if the response is ok then a client is created for this peer with the OK message and that's why it will directly
             # sent an OK message to the requesting side peer server and waits for the user input
             # main process waits for the client thread to finish its chat
+            elif choice == "7" and self.isOnline:
+                os.system('cls')
+                time.sleep(0.2)
+                room_name = input("\033[96mEnter the name of the chat room: \033[0m")
+                self.create_room(room_name, self.loginCredentials[0])
+            elif choice == "8" and self.isOnline:
+                os.system('cls')
+                time.sleep(0.2)
+                room_name = input("\033[96mEnter the name of the chat room: \033[0m")
+                self.join_room(room_name, self.loginCredentials[0])
+            elif choice == "9" and self.isOnline:
+                os.system('cls')
+                time.sleep(0.2)
+                response = self.get_available_rooms()
+                if response[0] == "no-available-rooms":
+                    print("\033[91mNo available rooms...\033[0m")
+                elif response[0] == "get-available-rooms-success":
+                    # list of online users returned includes user who asks for the list, we remove him from the list
+                    available_rooms = [name for name in response[1:]]
+                    if len(available_rooms) == 0:
+                        print("\033[91mNo available rooms...\033[0m")
+                    else:
+                        print("\033[92mAvailable rooms are: \033[0m" + " ".join(available_rooms))
+                time.sleep(2)
+            elif choice == "10" and self.isOnline:
+                os.system('cls')
+                time.sleep(0.2)
+                room_name = input("\033[96mEnter the name of the room: \033[0m")
+
+                searchStatus = self.search_user_in_room(room_name, self.loginCredentials[0])
+                # if searched user is found, then its ip address and port number is retrieved
+                # and a client thread is created
+                # main process waits for the client thread to finish its chat
+                if searchStatus != None:
+                    searchStatus = searchStatus.split(":")
+                    self.peerClient = PeerClient(searchStatus[0], int(searchStatus[1]), self.loginCredentials[0],
+                                                 self.peerServer, None)
+                    self.peerClient.start()
+                    self.peerClient.join()
+                else:
+                    print("\033[91mRoom not available.\033[0m")
+                    time.sleep(2)
+
             elif choice == "OK" and self.isOnline:
                 okMessage = "OK " + self.loginCredentials[0]
                 logging.info("Send to " + self.peerServer.connectedPeerIP + " -> " + okMessage)
@@ -797,6 +839,61 @@ class peerMain:
             time.sleep(2)
         elif response == "join-exist":
             print("\033[91mUsername already exists, choose another username. Loading...\033[0m")
+            time.sleep(2)
+
+    def create_room(self, room_name, username):
+        message = "CREATE-ROOM" + " " + room_name + " " + username
+        logging.info("Send to " + self.registryName + ":" + str(self.registryPort) + " -> " + message)
+        is_disconnected = False
+        for i in range(3):
+            try:
+                self.tcpClientSocket.send(message.encode())
+                break
+            except:
+                if i == 2:
+                    print(bcolors.RED + "Connection to server failed, exiting..." + bcolors.ENDC)
+                    is_disconnected = True
+                    break
+                print(bcolors.RED + "Connection timed out, trying to reconnect..." + bcolors.ENDC)
+                time.sleep(2)
+        if is_disconnected:
+            os._exit(1)
+        response = self.tcpClientSocket.recv(1024).decode()
+        logging.info("Received from " + self.registryName + " -> " + response)
+        if response == "create-room-success":
+            print("\033[92mRoom created successfully! Loading...\033[0m")
+            time.sleep(2)
+        elif response == "create-room-exist":
+            print("\033[91mRoom already exists, choose another room name. Loading...\033[0m")
+            time.sleep(2)
+
+    def join_room(self, room_name, username):
+        message = "JOIN-ROOM" + " " + room_name + " " + username
+        logging.info("Send to " + self.registryName + ":" + str(self.registryPort) + " -> " + message)
+        is_disconnected = False
+        for i in range(3):
+            try:
+                self.tcpClientSocket.send(message.encode())
+                break
+            except:
+                if i == 2:
+                    print(bcolors.RED + "Connection to server failed, exiting..." + bcolors.ENDC)
+                    is_disconnected = True
+                    break
+                print(bcolors.RED + "Connection timed out, trying to reconnect..." + bcolors.ENDC)
+                time.sleep(2)
+        if is_disconnected:
+            os._exit(1)
+        response = self.tcpClientSocket.recv(1024).decode()
+        logging.info("Received from " + self.registryName + " -> " + response)
+        if response == "join-room-success":
+            print("\033[92mJoined the room successfully! Loading...\033[0m")
+            time.sleep(2)
+        elif response == "join-room-not-exist":
+            print("\033[91mRoom does not exist, choose another room name. Loading...\033[0m")
+            time.sleep(2)
+        elif response == "join-room-already-member":
+            print("\033[91mYou are already a member of this room. Loading...\033[0m")
             time.sleep(2)
 
     # password policy check function
@@ -918,6 +1015,35 @@ class peerMain:
                 break
         return port
 
+
+    def search_user_in_room(self, room_name, username):
+        message = "SEARCH-ROOM-USER" + " " + room_name + " " + username
+        logging.info("Send to " + self.registryName + ":" + str(self.registryPort) + " -> " + message)
+        is_disconnected = False
+        for i in range(3):
+            try:
+                self.tcpClientSocket.send(message.encode())
+                break
+            except:
+                if i == 2:
+                    print(bcolors.RED + "Connection to server failed, exiting..." + bcolors.ENDC)
+                    is_disconnected = True
+                    break
+                print(bcolors.RED + "Connection timed out, trying to reconnect..." + bcolors.ENDC)
+                time.sleep(2)
+        if is_disconnected:
+            os._exit(1)
+        response = self.tcpClientSocket.recv(1024).decode()
+        logging.info("Received from " + self.registryName + " -> " + response)
+        if response == "search-user-room-success":
+            print("\033[92mRoom found successfully! Loading...\033[0m")
+            time.sleep(2)
+            return response[1]
+        elif response == "search-room-not-available":
+            print("\033[91mRoom not available. Loading...\033[0m")
+            time.sleep(2)
+            return None
+
     # function for searching an online user
     def searchUser(self, username):
         # a search message is composed and sent to registry
@@ -954,7 +1080,28 @@ class peerMain:
             print("\033[93m" + username + " is not found\033[0m")
             time.sleep(2)
             return None
+    def get_available_rooms(self):
+        message = "GET-AVAILABLE-ROOMS"
+        logging.info("Send to " + self.registryName + ":" + str(self.registryPort) + " -> " + message)
+        is_disconnected = False
+        for i in range(3):
+            try:
+                self.tcpClientSocket.send(message.encode())
+                break
+            except:
+                if i == 2:
+                    print(bcolors.RED + "Connection to server failed, exiting..." + bcolors.ENDC)
+                    is_disconnected = True
+                    break
+                print(bcolors.RED + "Connection timed out, trying to reconnect..." + bcolors.ENDC)
+                time.sleep(2)
 
+        if is_disconnected:
+            os._exit(1)
+        # self.tcpClientSocket.send(message.encode()) ##########################################################
+        response = self.tcpClientSocket.recv(1024).decode().split()
+        logging.info("Received from " + self.registryName + " -> " + " ".join(response))
+        return response
     # function for getting online users
     def get_online_users(self):
         message = "GET-ONLINE-USERS"
