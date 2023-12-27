@@ -23,6 +23,11 @@ global chat_log
 chat_log = ''
 # Server side of peer
 
+global registryIP
+registryIP = ''
+global registryPort
+registryPort = 15600
+
 class bcolors:
     BLACK = '\033[30m'
     RED = '\033[31m'
@@ -148,8 +153,10 @@ class PeerServer(threading.Thread):
                                 # gets the username of the peer sends the chat request message
                                 self.chattingClientName = messageReceived[2]
                                 # prints prompt for the incoming chat request
-                                print("Incoming chat request from " + self.chattingClientName + " >> ")
-                                print("Enter OK to accept, REJECT to reject : ")
+                                #print("Incoming chat request from " + self.chattingClientName + " >> ")
+                                #print("Enter OK to accept, REJECT to reject : ")
+                                print(bcolors.LIGHT_CYAN + self.chattingClientName + " has sent you a chat request!" + bcolors.ENDC)
+                                print(bcolors.LIGHT_CYAN + "Enter OK to accept, or REJECT to reject the chat request: " + bcolors.ENDC)
                                 # makes isChatRequested = 1 which means that peer is chatting with someone
                                 self.isChatRequested = 1
                             # if the socket that we received the data does not belong to the peer that we are chatting with
@@ -157,6 +164,7 @@ class PeerServer(threading.Thread):
                             elif s is not self.connectedPeerSocket and self.isChatRequested == 1:
                                 # sends a busy message to the peer that sends a chat request when this peer is 
                                 # already chatting with someone else
+                                #print('XDDDDD LMAOOOOOOO')
                                 message = "BUSY"
                                 s.send(message.encode())
                                 # remove the peer from the inputs list so that it will not monitor this socket
@@ -286,8 +294,26 @@ class PeerClient(threading.Thread):
             # sends the chat request
             is_disconnected = False
             ###
+            # for i in range(3):
+            #     try:
+            #         self.tcpClientSocket.send(requestMessage.encode())
+            #         break
+            #     except:
+            #         if i == 2:
+            #             print(bcolors.RED + "Connection to server failed, exiting..." + bcolors.ENDC)
+            #             is_disconnected = True
+            #             break
+            #         print(bcolors.RED + "Connection timed out, trying to reconnect..." + bcolors.ENDC)
+            #         time.sleep(2)
+
             for i in range(3):
                 try:
+                    if i != 0:
+                        self.tcpClientSocket = socket(AF_INET, SOCK_STREAM)
+                        self.tcpClientSocket.connect((registryIP, registryPort))
+                        dabe = DB()
+                        pword = dabe.get_password(self.username)
+                        peerMain.login(self.username, pword, self.peerServer.peerServerPort)
                     self.tcpClientSocket.send(requestMessage.encode())
                     break
                 except:
@@ -331,20 +357,26 @@ class PeerClient(threading.Thread):
                     # print(messageSent)
                     # sends the message to the connected peer, and logs it
                     is_disconnected = False
-                    for i in range(3):
-                        try:
-                            self.tcpClientSocket.send(messageSent.encode())
-                            break
-                        except:
-                            if i == 2:
-                                print(bcolors.RED + "Connection to server failed, exiting..." + bcolors.ENDC)
-                                is_disconnected = True
-                                break
-                            print(bcolors.RED + "Connection timed out, trying to reconnect..." + bcolors.ENDC)
-                            time.sleep(2)
+                    # for i in range(3):
+                    #     try:
+                    #         self.tcpClientSocket.send(messageSent.encode())
+                    #         break
+                    #     except:
+                    #         if i == 2:
+                    #             print(bcolors.RED + "Connection to server failed, exiting..." + bcolors.ENDC)
+                    #             is_disconnected = True
+                    #             break
+                    #         print(bcolors.RED + "Connection timed out, trying to reconnect..." + bcolors.ENDC)
+                    #         time.sleep(2)
+                    try:
+                        self.tcpClientSocket.send(messageSent.encode())
+                    except:
+                        print(bcolors.RED + "Lost connection to user, exiting..." + bcolors.ENDC)
+                        is_disconnected = True
+                        time.sleep(2)
 
                     if is_disconnected:
-                        os._exit(1)
+                        break
                     #self.tcpClientSocket.send(messageSent.encode()) #####################################################
                     #print(self.username + ": ")
                     logging.info("Send to " + self.ipToConnect + ":" + str(self.portToConnect) + " -> " + messageSent)
@@ -373,9 +405,10 @@ class PeerClient(threading.Thread):
             # if the request is rejected, then changes the server status, sends a reject message to the connected peer's server
             # logs the message and then the socket is closed       
             elif self.responseReceived[0] == "REJECT":
-                print("Response is " + self.responseReceived[0])
+                #print("Response is " + self.responseReceived[0])
                 self.peerServer.isChatRequested = 0
-                print("client of requester is closing...")
+                print(bcolors.RED + "User has rejected the chat request. Redirecting to main menu..." + bcolors.ENDC)
+                time.sleep(2)
                 is_disconnected = False
                 for i in range(3):
                     try:
@@ -396,7 +429,12 @@ class PeerClient(threading.Thread):
                 self.tcpClientSocket.close()
             # if a busy response is received, closes the socket
             elif self.responseReceived[0] == "BUSY":
-                print("Receiver peer is busy")
+                print(bcolors.RED + "User is currently busy, try again another time. Redirecting to main menu..." + bcolors.ENDC)
+                time.sleep(3)
+                self.tcpClientSocket.close()
+            elif self.responseReceived[0] != "BUSY":
+                print(bcolors.RED + "User is currently busy, try again another time. Redirecting to main menu..." + bcolors.ENDC)
+                time.sleep(3)
                 self.tcpClientSocket.close()
         # if the client is created with OK message it means that this is the client of receiver side peer
         # so it sends an OK message to the requesting side peer server that it connects and then waits for the user inputs.
@@ -433,20 +471,26 @@ class PeerClient(threading.Thread):
                 messageSent = self.text_manipulation(messageSent)
                 chat_log = chat_log + bcolors.WHITE + self.username + bcolors.ENDC + ": " + messageSent + '\n'
                 is_disconnected = False
-                for i in range(3):
-                    try:
-                        self.tcpClientSocket.send(messageSent.encode())
-                        break
-                    except:
-                        if i == 2:
-                            print(bcolors.RED + "Connection to server failed, exiting..." + bcolors.ENDC)
-                            is_disconnected = True
-                            break
-                        print(bcolors.RED + "Connection timed out, trying to reconnect..." + bcolors.ENDC)
-                        time.sleep(2)
+                # for i in range(3):
+                #     try:
+                #         self.tcpClientSocket.send(messageSent.encode())
+                #         break
+                #     except:
+                #         if i == 2:
+                #             print(bcolors.RED + "Connection to server failed, exiting..." + bcolors.ENDC)
+                #             is_disconnected = True
+                #             break
+                #         print(bcolors.RED + "Connection timed out, trying to reconnect..." + bcolors.ENDC)
+                #         time.sleep(2)
+                try:
+                    self.tcpClientSocket.send(messageSent.encode())
+                except:
+                    print(bcolors.RED + "Lost connection to user, exiting..." + bcolors.ENDC)
+                    is_disconnected = True
+                    time.sleep(2)
 
                 if is_disconnected:
-                    os._exit(1)
+                    break
                 #self.tcpClientSocket.send(messageSent.encode()) ###################################################
                 #print(self.username + ": ")
                 logging.info("Send to " + self.ipToConnect + ":" + str(self.portToConnect) + " -> " + messageSent)
@@ -486,9 +530,9 @@ class PeerClient(threading.Thread):
 
 # main process of the peer
 class peerMain:
-
     # peer initializations
     def __init__(self):
+        global registryIP
         # ip address of the registry
         os.system('cls')
         while True:
@@ -506,6 +550,7 @@ class peerMain:
                 try:
                     self.tcpClientSocket.connect((self.registryName, self.registryPort))
                     print("\033[92mConnected Successfully! Loading...\033[0m")
+                    registryIP = self.registryName
                     time.sleep(2)
                     break
                 except:
@@ -731,6 +776,7 @@ class peerMain:
                 if chat_with_self_flag:
                     continue
                 searchStatus = self.searchUser(username)
+                print(searchStatus)
                 # if searched user is found, then its ip address and port number is retrieved
                 # and a client thread is created
                 # main process waits for the client thread to finish its chat
@@ -818,8 +864,22 @@ class peerMain:
         message = "JOIN " + username + " " + password
         logging.info("Send to " + self.registryName + ":" + str(self.registryPort) + " -> " + message)
         is_disconnected = False
+        # for i in range(3):
+        #     try:
+        #         self.tcpClientSocket.send(message.encode())
+        #         break
+        #     except:
+        #         if i == 2:
+        #             print(bcolors.RED + "Connection to server failed, exiting..." + bcolors.ENDC)
+        #             is_disconnected = True
+        #             break
+        #         print(bcolors.RED + "Connection timed out, trying to reconnect..." + bcolors.ENDC)
+        #         time.sleep(2)
         for i in range(3):
             try:
+                if i != 0:
+                    self.tcpClientSocket = socket(AF_INET, SOCK_STREAM)
+                    self.tcpClientSocket.connect((self.registryName, self.registryPort))
                 self.tcpClientSocket.send(message.encode())
                 break
             except:
@@ -845,8 +905,25 @@ class peerMain:
         message = "CREATE-ROOM" + " " + room_name + " " + username
         logging.info("Send to " + self.registryName + ":" + str(self.registryPort) + " -> " + message)
         is_disconnected = False
+        # for i in range(3):
+        #     try:
+        #         self.tcpClientSocket.send(message.encode())
+        #         break
+        #     except:
+        #         if i == 2:
+        #             print(bcolors.RED + "Connection to server failed, exiting..." + bcolors.ENDC)
+        #             is_disconnected = True
+        #             break
+        #         print(bcolors.RED + "Connection timed out, trying to reconnect..." + bcolors.ENDC)
+        #         time.sleep(2)
         for i in range(3):
             try:
+                if i != 0:
+                    self.tcpClientSocket = socket(AF_INET, SOCK_STREAM)
+                    self.tcpClientSocket.connect((self.registryName, self.registryPort))
+                    dabe = DB()
+                    pword = dabe.get_password(self.loginCredentials[0])
+                    self.login(self.loginCredentials[0], pword, self.peerServerPort)
                 self.tcpClientSocket.send(message.encode())
                 break
             except:
@@ -871,8 +948,25 @@ class peerMain:
         message = "JOIN-ROOM" + " " + room_name + " " + username
         logging.info("Send to " + self.registryName + ":" + str(self.registryPort) + " -> " + message)
         is_disconnected = False
+        # for i in range(3):
+        #     try:
+        #         self.tcpClientSocket.send(message.encode())
+        #         break
+        #     except:
+        #         if i == 2:
+        #             print(bcolors.RED + "Connection to server failed, exiting..." + bcolors.ENDC)
+        #             is_disconnected = True
+        #             break
+        #         print(bcolors.RED + "Connection timed out, trying to reconnect..." + bcolors.ENDC)
+        #         time.sleep(2)
         for i in range(3):
             try:
+                if i != 0:
+                    self.tcpClientSocket = socket(AF_INET, SOCK_STREAM)
+                    self.tcpClientSocket.connect((self.registryName, self.registryPort))
+                    dabe = DB()
+                    pword = dabe.get_password(self.loginCredentials[0])
+                    self.login(self.loginCredentials[0], pword, self.peerServerPort)
                 self.tcpClientSocket.send(message.encode())
                 break
             except:
@@ -945,12 +1039,26 @@ class peerMain:
         message = "LOGIN " + username + " " + password + " " + str(peerServerPort)
         logging.info("Send to " + self.registryName + ":" + str(self.registryPort) + " -> " + message)
         is_disconnected = False
-        for i in range(3):
+        # for i in range(3):
+        #     try:
+        #         self.tcpClientSocket.send(message.encode())
+        #         break
+        #     except:
+        #         if i == 2:
+        #             print(bcolors.RED + "Connection to server failed, exiting..." + bcolors.ENDC)
+        #             is_disconnected = True
+        #             break
+        #         print(bcolors.RED + "Connection timed out, trying to reconnect..." + bcolors.ENDC)
+        #         time.sleep(2)
+        for i in range(99):
             try:
+                if i != 0:
+                    self.tcpClientSocket = socket(AF_INET, SOCK_STREAM)
+                    self.tcpClientSocket.connect((self.registryName, self.registryPort))
                 self.tcpClientSocket.send(message.encode())
                 break
             except:
-                if i == 2:
+                if i == 89:
                     print(bcolors.RED + "Connection to server failed, exiting..." + bcolors.ENDC)
                     is_disconnected = True
                     break
@@ -991,8 +1099,25 @@ class peerMain:
         #print(message)
         logging.info("Send to " + self.registryName + ":" + str(self.registryPort) + " -> " + message)
         is_disconnected = False
+        # for i in range(3):
+        #     try:
+        #         self.tcpClientSocket.send(message.encode())
+        #         break
+        #     except:
+        #         if i == 2:
+        #             print(bcolors.RED + "Connection to server failed, exiting..." + bcolors.ENDC)
+        #             is_disconnected = True
+        #             break
+        #         print(bcolors.RED + "Connection timed out, trying to reconnect..." + bcolors.ENDC)
+        #         time.sleep(2)
         for i in range(3):
             try:
+                if i != 0:
+                    self.tcpClientSocket = socket(AF_INET, SOCK_STREAM)
+                    self.tcpClientSocket.connect((self.registryName, self.registryPort))
+                    dabe = DB()
+                    pword = dabe.get_password(self.loginCredentials[0])
+                    self.login(self.loginCredentials[0], pword, self.peerServerPort)
                 self.tcpClientSocket.send(message.encode())
                 break
             except:
@@ -1020,8 +1145,25 @@ class peerMain:
         message = "SEARCH-ROOM-USER" + " " + room_name + " " + username
         logging.info("Send to " + self.registryName + ":" + str(self.registryPort) + " -> " + message)
         is_disconnected = False
+        # for i in range(3):
+        #     try:
+        #         self.tcpClientSocket.send(message.encode())
+        #         break
+        #     except:
+        #         if i == 2:
+        #             print(bcolors.RED + "Connection to server failed, exiting..." + bcolors.ENDC)
+        #             is_disconnected = True
+        #             break
+        #         print(bcolors.RED + "Connection timed out, trying to reconnect..." + bcolors.ENDC)
+        #         time.sleep(2)
         for i in range(3):
             try:
+                if i != 0:
+                    self.tcpClientSocket = socket(AF_INET, SOCK_STREAM)
+                    self.tcpClientSocket.connect((self.registryName, self.registryPort))
+                    dabe = DB()
+                    pword = dabe.get_password(self.loginCredentials[0])
+                    self.login(self.loginCredentials[0], pword, self.peerServerPort)
                 self.tcpClientSocket.send(message.encode())
                 break
             except:
@@ -1052,8 +1194,25 @@ class peerMain:
         message = "SEARCH " + username
         logging.info("Send to " + self.registryName + ":" + str(self.registryPort) + " -> " + message)
         is_disconnected = False
+        # for i in range(3):
+        #     try:
+        #         self.tcpClientSocket.send(message.encode())
+        #         break
+        #     except:
+        #         if i == 2:
+        #             print(bcolors.RED + "Connection to server failed, exiting..." + bcolors.ENDC)
+        #             is_disconnected = True
+        #             break
+        #         print(bcolors.RED + "Connection timed out, trying to reconnect..." + bcolors.ENDC)
+        #         time.sleep(2)
         for i in range(3):
             try:
+                if i != 0:
+                    self.tcpClientSocket = socket(AF_INET, SOCK_STREAM)
+                    self.tcpClientSocket.connect((self.registryName, self.registryPort))
+                    dabe = DB()
+                    pword = dabe.get_password(self.loginCredentials[0])
+                    self.login(self.loginCredentials[0], pword, self.peerServerPort)
                 self.tcpClientSocket.send(message.encode())
                 break
             except:
@@ -1084,8 +1243,25 @@ class peerMain:
         message = "GET-AVAILABLE-ROOMS"
         logging.info("Send to " + self.registryName + ":" + str(self.registryPort) + " -> " + message)
         is_disconnected = False
+        # for i in range(3):
+        #     try:
+        #         self.tcpClientSocket.send(message.encode())
+        #         break
+        #     except:
+        #         if i == 2:
+        #             print(bcolors.RED + "Connection to server failed, exiting..." + bcolors.ENDC)
+        #             is_disconnected = True
+        #             break
+        #         print(bcolors.RED + "Connection timed out, trying to reconnect..." + bcolors.ENDC)
+        #         time.sleep(2)
         for i in range(3):
             try:
+                if i != 0:
+                    self.tcpClientSocket = socket(AF_INET, SOCK_STREAM)
+                    self.tcpClientSocket.connect((self.registryName, self.registryPort))
+                    dabe = DB()
+                    pword = dabe.get_password(self.loginCredentials[0])
+                    self.login(self.loginCredentials[0], pword, self.peerServerPort)
                 self.tcpClientSocket.send(message.encode())
                 break
             except:
