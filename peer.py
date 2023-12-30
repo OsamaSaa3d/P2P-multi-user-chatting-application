@@ -328,6 +328,11 @@ class PeerClient(threading.Thread):
 global has_ended
 has_ended = False
 
+global colors
+colors = [bcolors.LIGHT_GREEN, bcolors.CYAN, bcolors.LIGHT_YELLOW, bcolors.LIGHT_RED, bcolors.YELLOW, bcolors.BLUE]
+global colors_used
+colors_used = []
+
 class PeerServerRoom(threading.Thread):
     def __init__(self, ipToConnect, udpSock, username, roomname):
         threading.Thread.__init__(self)
@@ -355,7 +360,7 @@ class PeerServerRoom(threading.Thread):
                     chat_log = chat_log + message[0] + '\n'
                     continue
                 #print(bcolors.GREEN + f"{message[0]}:" + bcolors.ENDC + f"{message[1]}")
-                chat_log = chat_log + bcolors.LIGHT_GREEN + message[0] + bcolors.ENDC + ": " + message[1] + '\n'
+                chat_log = chat_log + message[0] + ": " + message[1] + '\n'
 
             except:
                 pass
@@ -410,7 +415,14 @@ class PeerClientRoom(threading.Thread):
     def run(self):
         global chat_log
         global has_ended
+        global colors_used
+        global colors
         print(f"Chat Room {self.room_name} started...")
+        random_color = random.randint(0, len(colors))
+        while colors[random_color] in colors_used:
+            random_color = random.randint(0, len(colors))
+        random_color = colors[random_color]
+        colors_used.append(random_color)
         #self.udpClientSocket.bind(("localhost", self.udpPort))
         db_obj = DB()
         users_ports = db_obj.get_room_ports(self.room_name)
@@ -430,12 +442,13 @@ class PeerClientRoom(threading.Thread):
                 self.udpClientSocket.close()
                 chat_log = ''
                 db_obj.delete_room_online_participants_ports(self.udpPort, self.room_name)
+                colors_used.remove(random_color)
                 has_ended = True
                 break
             msg = self.text_manipulation(msg)
             #msg = self.username + "<gL0dDyYi!Z>" + msg #Delimiter: <gL0dDyYi!Z>
             chat_log = chat_log + bcolors.WHITE + self.username + bcolors.ENDC + ": " + msg + '\n'
-            msg = self.username + "<gL0dDyYi!Z>" + msg  # Delimiter: <gL0dDyYi!Z>
+            msg = random_color + self.username + bcolors.ENDC + "<gL0dDyYi!Z>" + msg  # Delimiter: <gL0dDyYi!Z>
             users_ports = db_obj.get_room_ports(self.room_name)
             self.ports = users_ports[:]
             os.system('cls')
