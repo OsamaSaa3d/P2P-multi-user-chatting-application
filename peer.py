@@ -350,7 +350,7 @@ class PeerServerRoom(threading.Thread):
 
 
 class PeerClientRoom(threading.Thread):
-    def __init__(self, ipToConnect, udpSock, ports, username, peerServer, room_name):
+    def __init__(self, ipToConnect, udpSock ,udpPort, ports, username, peerServer, room_name):
         threading.Thread.__init__(self)
         self.udpClientSocket = udpSock
         self.ipToConnect = ipToConnect
@@ -358,6 +358,7 @@ class PeerClientRoom(threading.Thread):
         self.username = username
         self.peerServer = peerServer
         self.room_name = room_name
+        self.udpPort = udpPort
 
     def run(self):
         global chat_log
@@ -365,15 +366,20 @@ class PeerClientRoom(threading.Thread):
         #self.udpClientSocket.bind(("localhost", self.udpPort))
         while True:
             msg = input(f"{self.username}: ")
+            db_obj = DB()
+            users_ports = db_obj.get_room_ports(self.room_name)
+            self.ports = users_ports[:]
+            
             if msg != ":q":
                 for port in self.ports:
+                    if port == self.udpPort:
+                        continue
                     self.udpClientSocket.sendto(msg.encode(), (self.ipToConnect, port))
-                    time.sleep(1)
                 time.sleep(1)
             else:
                 self.udpClientSocket.close()
-                #DB.delete_room_online_participants_ports(self.udpPort, self.room_name)
-                return
+                db_obj.delete_room_online_participants_ports(self.udpPort, self.room_name)
+                break
 
 
 
@@ -870,6 +876,8 @@ class peerMain:
         # getting db instance
         self.db = DB()
         choice = "0"
+
+        
         # TSL connection
         # context = ssl.create_default_context()
         # self.tcpClientSocket = context.wrap_socket(self.tcpClientSocket, server_hostname=self.registryName)
@@ -1062,22 +1070,28 @@ class peerMain:
                 time.sleep(0.2)
                 room_name = input("\033[96mEnter the name of the room: \033[0m")
                 udpPort = self.get_available_port_new()
+                db = DB()
+                participants = db.get_room_participants(room_name)
+                if participants:
+                    if self.loginCredentials[0] not in participants:
+                        print("\033[91mYou're not registered in the room...\033[0m")
+                        time.sleep(2)
+                        continue
+                else:
+                    print("\033[91mRoom does not exist...\033[0m")
+                    time.sleep(2)
+                    continue
                 response = self.get_room_peers(room_name)
                 self.add_port_to_room(room_name, udpPort)
                 print(response)
-                self.udpClientSocket = socket(AF_INET, SOCK_DGRAM)
-                hostname = gethostname()
-                try:
-                    host = gethostbyname(hostname)
-                except gaierror:
-                    import netifaces as ni
-                    host = ni.ifaddresses('en0')[ni.AF_INET][0]['addr']
-                self.udpClientSocket.bind((host, udpPort))
-                self.serverRoom = PeerServerRoom(self.peerServer.connectedPeerIP, self.udpClientSocket, self.loginCredentials[0],
+                self.udpClientSocket_room = socket(AF_INET, SOCK_DGRAM)
+                
+                self.udpClientSocket_room.bind((registryIP, udpPort))
+                self.serverRoom = PeerServerRoom(registryIP, self.udpClientSocket_room, self.loginCredentials[0],
                                                  room_name)
                 self.serverRoom.start()
                 #self.serverRoom.join()
-                self.udpRoom = PeerClientRoom(self.peerServer.connectedPeerIP, self.udpClientSocket, response, self.loginCredentials[0],
+                self.udpRoom = PeerClientRoom(registryIP, self.udpClientSocket_room, udpPort, response, self.loginCredentials[0],
                                               self.peerServer, room_name)
                 self.udpRoom.start()
                 self.udpRoom.join()
@@ -1297,7 +1311,7 @@ class peerMain:
     def is_port_available_new(self, port):
         taken_ports = self.db.get_all_ports()
         for p in taken_ports:
-            if int(p['port']) == int(port):
+            if int(p['port']) == int(port) or int(port) == 15500 or int(port) == 15600:
                 return False
         return True
 
