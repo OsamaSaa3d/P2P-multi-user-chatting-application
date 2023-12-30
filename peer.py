@@ -351,8 +351,12 @@ class PeerServerRoom(threading.Thread):
                 message, _ = self.udpClientSocket.recvfrom(1024)
                 message = message.decode()
                 message = message.split("<gL0dDyYi!Z>")
+                if len(message) == 1:
+                    chat_log = chat_log + message[0] + '\n'
+                    continue
                 #print(bcolors.GREEN + f"{message[0]}:" + bcolors.ENDC + f"{message[1]}")
                 chat_log = chat_log + bcolors.LIGHT_GREEN + message[0] + bcolors.ENDC + ": " + message[1] + '\n'
+
             except:
                 pass
 
@@ -409,11 +413,20 @@ class PeerClientRoom(threading.Thread):
         print(f"Chat Room {self.room_name} started...")
         #self.udpClientSocket.bind(("localhost", self.udpPort))
         db_obj = DB()
+        users_ports = db_obj.get_room_ports(self.room_name)
+        self.ports = users_ports[:]
+        # message of user entering chat
+        notification = bcolors.BLUE + self.username + " has joined the chatroom" + bcolors.ENDC
+        for port in self.ports:
+            self.udpClientSocket.sendto(notification.encode(), (self.ipToConnect, port))
         while True:
             #os.system('cls')
             #print(chat_log)
             msg = input('')
             if msg == ':q':
+                notification = bcolors.LIGHT_MAGENTA + self.username + " has left the chatroom" + bcolors.ENDC
+                for port in self.ports:
+                    self.udpClientSocket.sendto(notification.encode(), (self.ipToConnect, port))
                 self.udpClientSocket.close()
                 chat_log = ''
                 db_obj.delete_room_online_participants_ports(self.udpPort, self.room_name)
@@ -434,7 +447,7 @@ class PeerClientRoom(threading.Thread):
                     try:
                         self.udpClientSocket.sendto(msg.encode(), (self.ipToConnect, port))
                     except:
-                        pass
+                        db_obj.delete_room_online_participants_ports(port, self.room_name)
 
 
 
@@ -1138,7 +1151,7 @@ class peerMain:
                     continue
                 response = self.get_room_peers(room_name)
                 self.add_port_to_room(room_name, udpPort)
-                print(response)
+                
                 self.udpClientSocket_room = socket(AF_INET, SOCK_DGRAM)
                 
                 self.udpClientSocket_room.bind((registryIP, udpPort))
