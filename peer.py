@@ -327,18 +327,17 @@ class PeerClient(threading.Thread):
 
 
 class PeerServerRoom(threading.Thread):
-    def __init__(self, ipToConnect, udpPort, username, roomname):
+    def __init__(self, ipToConnect, udpSock, username, roomname):
         threading.Thread.__init__(self)
-        self.udpClientSocket = socket(AF_INET, SOCK_DGRAM)
+        self.udpClientSocket = udpSock
         self.ipToConnect = ipToConnect
-        self.udpPort = udpPort
         self.username = username
         self.room_name = roomname
 
     def run(self):
         global chat_log
         print(f"Receiving {self.room_name} started...")
-        self.udpClientSocket.bind((str(self.ipToConnect), self.udpPort))
+        #self.udpClientSocket.bind(("localhost", self.udpPort))
         while True:
             try:
                 message, _ = self.udpClientSocket.recvfrom(1024)
@@ -351,11 +350,10 @@ class PeerServerRoom(threading.Thread):
 
 
 class PeerClientRoom(threading.Thread):
-    def __init__(self, ipToConnect, udpPort, ports, username, peerServer, room_name):
+    def __init__(self, ipToConnect, udpSock, ports, username, peerServer, room_name):
         threading.Thread.__init__(self)
-        self.udpClientSocket = socket(AF_INET, SOCK_DGRAM)
+        self.udpClientSocket = udpSock
         self.ipToConnect = ipToConnect
-        self.udpPort = udpPort
         self.ports = ports
         self.username = username
         self.peerServer = peerServer
@@ -364,15 +362,18 @@ class PeerClientRoom(threading.Thread):
     def run(self):
         global chat_log
         print(f"Chat Room {self.room_name} started...")
-        self.udpClientSocket.bind((str(self.ipToConnect), self.udpPort))
-        msg = input(f"{self.username}: ")
-        if msg!=":q":
-            for port in self.ports:
-                self.udpClientSocket.sendto(msg.encode(), (self.ipToConnect, port))
-        else:
-            self.udpClientSocket.close()
-            DB.delete_room_online_participants_ports(self.udpPort, self.room_name)
-            return
+        #self.udpClientSocket.bind(("localhost", self.udpPort))
+        while True:
+            msg = input(f"{self.username}: ")
+            if msg != ":q":
+                for port in self.ports:
+                    self.udpClientSocket.sendto(msg.encode(), (self.ipToConnect, port))
+                    time.sleep(1)
+                time.sleep(1)
+            else:
+                self.udpClientSocket.close()
+                #DB.delete_room_online_participants_ports(self.udpPort, self.room_name)
+                return
 
 
 
@@ -1064,11 +1065,19 @@ class peerMain:
                 response = self.get_room_peers(room_name)
                 self.add_port_to_room(room_name, udpPort)
                 print(response)
-                self.serverRoom = PeerServerRoom(self.peerServer.connectedPeerIP, udpPort, self.loginCredentials[0],
+                self.udpClientSocket = socket(AF_INET, SOCK_DGRAM)
+                hostname = gethostname()
+                try:
+                    host = gethostbyname(hostname)
+                except gaierror:
+                    import netifaces as ni
+                    host = ni.ifaddresses('en0')[ni.AF_INET][0]['addr']
+                self.udpClientSocket.bind((host, udpPort))
+                self.serverRoom = PeerServerRoom(self.peerServer.connectedPeerIP, self.udpClientSocket, self.loginCredentials[0],
                                                  room_name)
                 self.serverRoom.start()
-                self.serverRoom.join()
-                self.udpRoom = PeerClientRoom(self.peerServer.connectedPeerIP, udpPort, response, self.loginCredentials[0],
+                #self.serverRoom.join()
+                self.udpRoom = PeerClientRoom(self.peerServer.connectedPeerIP, self.udpClientSocket, response, self.loginCredentials[0],
                                               self.peerServer, room_name)
                 self.udpRoom.start()
                 self.udpRoom.join()
@@ -1134,17 +1143,20 @@ class peerMain:
         message = "CREATE-ROOM" + " " + room_name + " " + username
         logging.info("Send to " + self.registryName + ":" + str(self.registryPort) + " -> " + message)
         is_disconnected = False
-        try:
-            self.tcpClientSocket = socket(AF_INET, SOCK_STREAM)
-            self.tcpClientSocket.connect((self.registryName, self.registryPort))
-            self.tcpClientSocket.send(message.encode())
-        except:
-
-            print(bcolors.RED + "Connection to server failed, exiting..." + bcolors.ENDC)
-            is_disconnected = True
-
-            print(bcolors.RED + "Connection timed out, trying to reconnect..." + bcolors.ENDC)
-            time.sleep(2)
+        for i in range(3):
+            try:
+                if i != 0:
+                    self.tcpClientSocket = socket(AF_INET, SOCK_STREAM)
+                    self.tcpClientSocket.connect((self.registryName, self.registryPort))
+                self.tcpClientSocket.send(message.encode())
+                break
+            except:
+                if i == 2:
+                    print(bcolors.RED + "Connection to server failed, exiting..." + bcolors.ENDC)
+                    is_disconnected = True
+                    break
+                print(bcolors.RED + "Connection timed out, trying to reconnect..." + bcolors.ENDC)
+                time.sleep(2)
         if is_disconnected:
             os._exit(1)
         response = self.tcpClientSocket.recv(1024).decode()
@@ -1160,15 +1172,20 @@ class peerMain:
         message = "ROOM-PEERS-ADD" + " " + room_name + " " + str(port)
         logging.info("Send to " + self.registryName + ":" + str(self.registryPort) + " -> " + message)
         is_disconnected = False
-        try:
-            self.tcpClientSocket = socket(AF_INET, SOCK_STREAM)
-            self.tcpClientSocket.connect((self.registryName, self.registryPort))
-            self.tcpClientSocket.send(message.encode())
-        except:
-            print(bcolors.RED + "Connection to server failed, exiting..." + bcolors.ENDC)
-            is_disconnected = True
-            print(bcolors.RED + "Connection timed out, trying to reconnect..." + bcolors.ENDC)
-            time.sleep(2)
+        for i in range(3):
+            try:
+                if i != 0:
+                    self.tcpClientSocket = socket(AF_INET, SOCK_STREAM)
+                    self.tcpClientSocket.connect((self.registryName, self.registryPort))
+                self.tcpClientSocket.send(message.encode())
+                break
+            except:
+                if i == 2:
+                    print(bcolors.RED + "Connection to server failed, exiting..." + bcolors.ENDC)
+                    is_disconnected = True
+                    break
+                print(bcolors.RED + "Connection timed out, trying to reconnect..." + bcolors.ENDC)
+                time.sleep(2)
         if is_disconnected:
             os._exit(1)
         response = self.tcpClientSocket.recv(1024).decode()
@@ -1180,9 +1197,11 @@ class peerMain:
         is_disconnected = False
         for i in range(3):
             try:
-                self.tcpClientSocket = socket(AF_INET, SOCK_STREAM)
-                self.tcpClientSocket.connect((self.registryName, self.registryPort))
+                if i != 0:
+                    self.tcpClientSocket = socket(AF_INET, SOCK_STREAM)
+                    self.tcpClientSocket.connect((self.registryName, self.registryPort))
                 self.tcpClientSocket.send(message.encode())
+                break
             except:
                 if i == 2:
                     print(bcolors.RED + "Connection to server failed, exiting..." + bcolors.ENDC)
