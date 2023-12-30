@@ -325,6 +325,8 @@ class PeerClient(threading.Thread):
                 self.responseReceived = None
                 self.tcpClientSocket.close()
 
+global has_ended
+has_ended = False
 
 class PeerServerRoom(threading.Thread):
     def __init__(self, ipToConnect, udpSock, username, roomname):
@@ -336,17 +338,27 @@ class PeerServerRoom(threading.Thread):
 
     def run(self):
         global chat_log
+        global has_ended
         print(f"Receiving {self.room_name} started...")
         #self.udpClientSocket.bind(("localhost", self.udpPort))
         while True:
+            if has_ended:
+                has_ended = False
+                break
+            os.system('cls')
+            print(chat_log)
             try:
                 message, _ = self.udpClientSocket.recvfrom(1024)
-                print(f"{self.username}: {message.decode()}")
+                message = message.decode()
+                message = message.split("<gL0dDyYi!Z>")
+                if len(message) == 1:
+                    chat_log = chat_log + message[0] + '\n'
+                    continue
+                #print(bcolors.GREEN + f"{message[0]}:" + bcolors.ENDC + f"{message[1]}")
+                chat_log = chat_log + bcolors.LIGHT_GREEN + message[0] + bcolors.ENDC + ": " + message[1] + '\n'
+
             except:
                 pass
-
-
-
 
 
 class PeerClientRoom(threading.Thread):
@@ -360,26 +372,82 @@ class PeerClientRoom(threading.Thread):
         self.room_name = room_name
         self.udpPort = udpPort
 
+    def text_manipulation(self, message):  # print("\033[1mThis is bold text.\033[0m")
+        edited_message = message[:]
+
+        matches = re.findall(r'(B\((.*?)\))', edited_message)
+        if matches:
+            for match in matches:
+                edited_message = edited_message.replace(match[0], f"\033[1m{match[1]}\033[0m")
+
+        matches = re.findall(r'(I\((.*?)\))', edited_message)
+        if matches:
+            for match in matches:
+                edited_message = edited_message.replace(match[0], f"\033[3m{match[1]}\033[0m")
+
+        matches = re.findall(r'(U\((.*?)\))', edited_message)
+        if matches:
+            for match in matches:
+                edited_message = edited_message.replace(match[0], f"\033[4m{match[1]}\033[0m")
+
+        matches = re.findall(r'(RED\((.*?)\))', edited_message)
+        if matches:
+            for match in matches:
+                edited_message = edited_message.replace(match[0], bcolors.RED + f"{match[1]}" + bcolors.ENDC)
+
+        matches = re.findall(r'(GREEN\((.*?)\))', edited_message)
+        if matches:
+            for match in matches:
+                edited_message = edited_message.replace(match[0], f"\033[92m{match[1]}\033[0m")
+
+        matches = re.findall(r'(BLUE\((.*?)\))', edited_message)
+        if matches:
+            for match in matches:
+                edited_message = edited_message.replace(match[0], f"\033[94m{match[1]}\033[0m")
+
+        return edited_message
+
     def run(self):
         global chat_log
+        global has_ended
         print(f"Chat Room {self.room_name} started...")
         #self.udpClientSocket.bind(("localhost", self.udpPort))
+        db_obj = DB()
+        users_ports = db_obj.get_room_ports(self.room_name)
+        self.ports = users_ports[:]
+        # message of user entering chat
+        notification = bcolors.BLUE + self.username + " has joined the chatroom" + bcolors.ENDC
+        for port in self.ports:
+            self.udpClientSocket.sendto(notification.encode(), (self.ipToConnect, port))
         while True:
-            msg = input(f"{self.username}: ")
-            db_obj = DB()
+            #os.system('cls')
+            #print(chat_log)
+            msg = input('')
+            if msg == ':q':
+                notification = bcolors.LIGHT_MAGENTA + self.username + " has left the chatroom" + bcolors.ENDC
+                for port in self.ports:
+                    self.udpClientSocket.sendto(notification.encode(), (self.ipToConnect, port))
+                self.udpClientSocket.close()
+                chat_log = ''
+                db_obj.delete_room_online_participants_ports(self.udpPort, self.room_name)
+                has_ended = True
+                break
+            msg = self.text_manipulation(msg)
+            #msg = self.username + "<gL0dDyYi!Z>" + msg #Delimiter: <gL0dDyYi!Z>
+            chat_log = chat_log + bcolors.WHITE + self.username + bcolors.ENDC + ": " + msg + '\n'
+            msg = self.username + "<gL0dDyYi!Z>" + msg  # Delimiter: <gL0dDyYi!Z>
             users_ports = db_obj.get_room_ports(self.room_name)
             self.ports = users_ports[:]
-            
+            os.system('cls')
+            print(chat_log)
             if msg != ":q":
                 for port in self.ports:
                     if port == self.udpPort:
                         continue
-                    self.udpClientSocket.sendto(msg.encode(), (self.ipToConnect, port))
-                time.sleep(1)
-            else:
-                self.udpClientSocket.close()
-                db_obj.delete_room_online_participants_ports(self.udpPort, self.room_name)
-                break
+                    try:
+                        self.udpClientSocket.sendto(msg.encode(), (self.ipToConnect, port))
+                    except:
+                        db_obj.delete_room_online_participants_ports(port, self.room_name)
 
 
 
@@ -1083,7 +1151,7 @@ class peerMain:
                     continue
                 response = self.get_room_peers(room_name)
                 self.add_port_to_room(room_name, udpPort)
-                print(response)
+                
                 self.udpClientSocket_room = socket(AF_INET, SOCK_DGRAM)
                 
                 self.udpClientSocket_room.bind((registryIP, udpPort))
