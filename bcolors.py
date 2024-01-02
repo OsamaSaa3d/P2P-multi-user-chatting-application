@@ -1,3 +1,5 @@
+
+
 class bcolors:
     BLACK = '\033[30m'
     RED = '\033[31m'
@@ -22,3 +24,11 @@ class bcolors:
     REVERSE = '\033[7m'
     CONCEAL = '\033[8m'
     ENDC = '\033[0m'
+
+
+global colors_used
+colors_used = []
+
+
+global colors
+colors = [bcolors.LIGHT_GREEN, bcolors.CYAN, bcolors.LIGHT_YELLOW, bcolors.LIGHT_RED, bcolors.YELLOW, bcolors.BLUE]

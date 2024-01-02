@@ -37,6 +37,10 @@ class AppStarter:
             pass
 
     def start_app(self):
+        #self.registryIP = input("\033[1mEnter IP address of registry: \033[0m")
+        #if self.registryIP == "q":
+        #    print("\033[92mProgram ended successfully.\033[0m")
+        #    exit()
         while True:
             ip_address_pattern = re.compile(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$')
             if not ip_address_pattern.match(self.registryIP):

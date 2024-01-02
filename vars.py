@@ -12,3 +12,10 @@ SYSTEM_IP = host
 
 global SYSTEM_PORT
 SYSTEM_PORT = 15600
+
+global has_ended
+has_ended = False
+
+
+global chat_log
+chat_log = ''

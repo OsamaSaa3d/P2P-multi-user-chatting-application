@@ -1,9 +1,13 @@
 import pwinput
 import string
 import hashlib
+import time
+from AccountCreationManager import AccountCreationManager
+from RoomManager import RoomManager
+from ChatUsersManager import ChatUsersManager
 
 
-class HomeManager:
+class AppManager:
     def __init__(self):
         self.switch_dict = {
             "1": "3",
@@ -15,6 +19,53 @@ class HomeManager:
             "7": "9",
             "8": "10",
         }
+        self.username = None
+        self.accountCreationManager = AccountCreationManager()
+        self.roomManager = RoomManager()
+        self.chatUsersManager = ChatUsersManager()
+        # self.logoutManager = LogOutManager()
+
+    def available_rooms_page(self, username, peerServerPort):
+        response = self.roomManager.get_available_rooms(username, peerServerPort)
+        if response[0] == "no-available-rooms":
+            print("\033[91mNo available rooms...\033[0m")
+        elif response[0] == "get-available-rooms-success":
+            # list of online users returned includes user who asks for the list, we remove him from the list
+            available_rooms = [name for name in response[1:]]
+            if len(available_rooms) == 0:
+                print("\033[91mNo available rooms...\033[0m")
+            else:
+                print("\033[92mAvailable rooms are: \033[0m" + " ".join(available_rooms))
+        time.sleep(2)
+
+    def online_users_page(self, username, peerServerPort):
+        response = self.chatUsersManager.get_online_users(username, peerServerPort)
+        if response[0] == "no-online-users":
+            print("\033[91mNo online users...\033[0m")
+        elif response[0] == "get-online-users-success":
+            # list of online users returned includes user who asks for the list, we remove him from the list
+            online_users = [name for name in response[1:] if name != self.username]
+            if len(online_users) == 0:
+                print("\033[91mNo online users...\033[0m")
+            else:
+                print("\033[92mOnline users are: \033[0m" + " ".join(online_users))
+            time.sleep(2)
+
+    def start_chat_page(self):
+        username_for_chat = input("\033[96mUsername to chat with: \033[0m")
+        if username_for_chat == self.username:
+            print("\033[91mYou cannot chat with yourself.\033[0m")
+            time.sleep(2)
+            return None
+        return username_for_chat
+
+    def search_user_page(self):
+        username_for_search = input("\033[96mUsername to be searched: \033[0m")
+        if username_for_search == self.username:
+            print("\033[91mYou cannot search yourself.\033[0m")
+            time.sleep(2)
+            return None
+        return username_for_search
 
     def start_menu_page(self):
         print("\033[1m\033[4mChoose an option\033[0m: \033[0m\n")
@@ -45,10 +96,19 @@ class HomeManager:
         while not self.check_password_policy(password):
             print("If you no longer want to create an account, please enter 'CANCEL'")
             password = input("\033[1mPassword: \033[0m")
-            if password == "CANCEL": #Check with Ramzyyyy
+            if password == "CANCEL":  # Check with Ramzyyyy
                 break
         password_hash = self.hash_password(password)
+        self.accountCreationManager.create_account_page(username, password_hash)
         return username, password_hash
+
+    def create_room_page(self, username):
+        room_name = input("\033[96mEnter the name of the chat room: \033[0m")
+        self.roomManager.create_room(room_name, username)
+
+    def join_room_page(self, username):
+        room_name = input("\033[96mEnter the name of the chat room: \033[0m")
+        self.roomManager.join_room(room_name, username)
 
     def check_password_policy(self, password):
         # Password policies
