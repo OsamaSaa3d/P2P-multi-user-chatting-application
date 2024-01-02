@@ -1,4 +1,3 @@
-
 from socket import *
 import netifaces as ni
 
@@ -10,3 +9,6 @@ except gaierror:
 
 global SYSTEM_IP
 SYSTEM_IP = host
+
+global SYSTEM_PORT
+SYSTEM_PORT = 15600
