@@ -1,8 +1,5 @@
+from vars import SYSTEM_IP
 
-'''
-    ##  Implementation of registry
-    ## 150114822 - Eren Ulaş
-'''
 from socket import *
 import threading
 import select
@@ -282,15 +279,17 @@ db = db.DB()
 # first checks to get it for windows devices
 # if the device that runs this application is not windows
 # it checks to get it for macos devices
-hostname = gethostname()
+"""hostname = gethostname()
 try:
     host = gethostbyname(hostname)
 except gaierror:
     import netifaces as ni
-    host = ni.ifaddresses('en0')[ni.AF_INET][0]['addr']
+    host = ni.ifaddresses('en0')[ni.AF_INET][0]['addr']"""
 
+"""print(SYSTEM_IP)"""
+host = SYSTEM_IP
 
-print("Registry IP address: " + host)
+"""print("Registry IP address: " + host)"""
 print("Registry port number: " + str(port))
 
 # onlinePeers list for online account

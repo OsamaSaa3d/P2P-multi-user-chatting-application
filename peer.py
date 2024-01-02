@@ -1,3 +1,7 @@
+from bcolors import bcolors
+from vars import SYSTEM_IP
+from TextManipulator import TextManipulator
+from HelloSender import HelloSender
 import os
 from socket import *
 import threading
@@ -16,35 +20,11 @@ chat_log = ''
 # Server side of peer
 
 global registryIP
-registryIP = ''
+registryIP = SYSTEM_IP
 global registryPort
 registryPort = 15600
 
 
-class bcolors:
-    BLACK = '\033[30m'
-    RED = '\033[31m'
-    GREEN = '\033[32m'
-    YELLOW = '\033[33m'
-    BLUE = '\033[34m'
-    MAGENTA = '\033[35m'
-    CYAN = '\033[36m'
-    LIGHT_GRAY = '\033[37m'
-    DARK_GRAY = '\033[90m'
-    LIGHT_RED = '\033[91m'
-    LIGHT_GREEN = '\033[92m'
-    LIGHT_YELLOW = '\033[93m'
-    LIGHT_BLUE = '\033[94m'
-    LIGHT_MAGENTA = '\033[95m'
-    LIGHT_CYAN = '\033[96m'
-    WHITE = '\033[97m'
-
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
-    BLINK = '\033[5m'
-    REVERSE = '\033[7m'
-    CONCEAL = '\033[8m'
-    ENDC = '\033[0m'
 # Client side of peer
 class PeerClient(threading.Thread):
     global chat_log
@@ -69,50 +49,13 @@ class PeerClient(threading.Thread):
         self.responseReceived = responseReceived
         # keeps if this client is ending the chat or not
         self.isEndingChat = False
-
+        self.text_manipulator = TextManipulator()
         self.udpPortRoom = None
-
-
 
         # TSL connection
         # context = ssl.create_default_context()
 
         # self.tcpClientSocket = context.wrap_socket(self.tcpClientSocket, server_hostname="192.168.1.7")
-
-    def text_manipulation(self, message):  # print("\033[1mThis is bold text.\033[0m")
-        edited_message = message[:]
-
-        matches = re.findall(r'(B\((.*?)\))', edited_message)
-        if matches:
-            for match in matches:
-                edited_message = edited_message.replace(match[0], f"\033[1m{match[1]}\033[0m")
-
-        matches = re.findall(r'(I\((.*?)\))', edited_message)
-        if matches:
-            for match in matches:
-                edited_message = edited_message.replace(match[0], f"\033[3m{match[1]}\033[0m")
-
-        matches = re.findall(r'(U\((.*?)\))', edited_message)
-        if matches:
-            for match in matches:
-                edited_message = edited_message.replace(match[0], f"\033[4m{match[1]}\033[0m")
-
-        matches = re.findall(r'(RED\((.*?)\))', edited_message)
-        if matches:
-            for match in matches:
-                edited_message = edited_message.replace(match[0], f"\033[93m{match[1]}\033[0m")
-
-        matches = re.findall(r'(GREEN\((.*?)\))', edited_message)
-        if matches:
-            for match in matches:
-                edited_message = edited_message.replace(match[0], f"\033[92m{match[1]}\033[0m")
-
-        matches = re.findall(r'(BLUE\((.*?)\))', edited_message)
-        if matches:
-            for match in matches:
-                edited_message = edited_message.replace(match[0], f"\033[94m{match[1]}\033[0m")
-
-        return edited_message
 
     # main method of the peer client thread
     def run(self):
@@ -174,10 +117,8 @@ class PeerClient(threading.Thread):
                     print(chat_log)
                     # message input prompt
                     messageSent = input('')
-                    # messageSent = f'\033[3m{messageSent}\033[0m' ######WORKS
-                    messageSent = self.text_manipulation(messageSent)
+                    messageSent = self.text_manipulator.manipulate(messageSent)
                     chat_log = chat_log + bcolors.WHITE + self.username + bcolors.ENDC + ": " + messageSent + '\n'
-                    # print(messageSent)
                     # sends the message to the connected peer, and logs it
                     is_disconnected = False
 
@@ -279,7 +220,7 @@ class PeerClient(threading.Thread):
                 print(chat_log)
                 # input prompt for user to enter message
                 messageSent = input('')
-                messageSent = self.text_manipulation(messageSent)
+                messageSent = self.text_manipulator.manipulate(messageSent)
                 chat_log = chat_log + bcolors.WHITE + self.username + bcolors.ENDC + ": " + messageSent + '\n'
                 is_disconnected = False
                 try:
@@ -325,6 +266,7 @@ class PeerClient(threading.Thread):
                 self.responseReceived = None
                 self.tcpClientSocket.close()
 
+
 global has_ended
 has_ended = False
 
@@ -332,6 +274,7 @@ global colors
 colors = [bcolors.LIGHT_GREEN, bcolors.CYAN, bcolors.LIGHT_YELLOW, bcolors.LIGHT_RED, bcolors.YELLOW, bcolors.BLUE]
 global colors_used
 colors_used = []
+
 
 class PeerServerRoom(threading.Thread):
     def __init__(self, ipToConnect, udpSock, username, roomname):
@@ -345,7 +288,7 @@ class PeerServerRoom(threading.Thread):
         global chat_log
         global has_ended
         print(f"Receiving {self.room_name} started...")
-        #self.udpClientSocket.bind(("localhost", self.udpPort))
+        # self.udpClientSocket.bind(("localhost", self.udpPort))
         while True:
             if has_ended:
                 has_ended = False
@@ -359,7 +302,7 @@ class PeerServerRoom(threading.Thread):
                 if len(message) == 1:
                     chat_log = chat_log + message[0] + '\n'
                     continue
-                #print(bcolors.GREEN + f"{message[0]}:" + bcolors.ENDC + f"{message[1]}")
+                # print(bcolors.GREEN + f"{message[0]}:" + bcolors.ENDC + f"{message[1]}")
                 chat_log = chat_log + message[0] + ": " + message[1] + '\n'
 
             except:
@@ -367,7 +310,7 @@ class PeerServerRoom(threading.Thread):
 
 
 class PeerClientRoom(threading.Thread):
-    def __init__(self, ipToConnect, udpSock ,udpPort, ports, username, peerServer, room_name):
+    def __init__(self, ipToConnect, udpSock, udpPort, ports, username, peerServer, room_name):
         threading.Thread.__init__(self)
         self.udpClientSocket = udpSock
         self.ipToConnect = ipToConnect
@@ -376,41 +319,7 @@ class PeerClientRoom(threading.Thread):
         self.peerServer = peerServer
         self.room_name = room_name
         self.udpPort = udpPort
-
-    def text_manipulation(self, message):  # print("\033[1mThis is bold text.\033[0m")
-        edited_message = message[:]
-
-        matches = re.findall(r'(B\((.*?)\))', edited_message)
-        if matches:
-            for match in matches:
-                edited_message = edited_message.replace(match[0], f"\033[1m{match[1]}\033[0m")
-
-        matches = re.findall(r'(I\((.*?)\))', edited_message)
-        if matches:
-            for match in matches:
-                edited_message = edited_message.replace(match[0], f"\033[3m{match[1]}\033[0m")
-
-        matches = re.findall(r'(U\((.*?)\))', edited_message)
-        if matches:
-            for match in matches:
-                edited_message = edited_message.replace(match[0], f"\033[4m{match[1]}\033[0m")
-
-        matches = re.findall(r'(RED\((.*?)\))', edited_message)
-        if matches:
-            for match in matches:
-                edited_message = edited_message.replace(match[0], bcolors.RED + f"{match[1]}" + bcolors.ENDC)
-
-        matches = re.findall(r'(GREEN\((.*?)\))', edited_message)
-        if matches:
-            for match in matches:
-                edited_message = edited_message.replace(match[0], f"\033[92m{match[1]}\033[0m")
-
-        matches = re.findall(r'(BLUE\((.*?)\))', edited_message)
-        if matches:
-            for match in matches:
-                edited_message = edited_message.replace(match[0], f"\033[94m{match[1]}\033[0m")
-
-        return edited_message
+        self.text_manipulator = TextManipulator()
 
     def run(self):
         global chat_log
@@ -423,7 +332,7 @@ class PeerClientRoom(threading.Thread):
             random_color = random.randint(0, len(colors))
         random_color = colors[random_color]
         colors_used.append(random_color)
-        #self.udpClientSocket.bind(("localhost", self.udpPort))
+        # self.udpClientSocket.bind(("localhost", self.udpPort))
         db_obj = DB()
         users_ports = db_obj.get_room_ports(self.room_name)
         self.ports = users_ports[:]
@@ -432,8 +341,8 @@ class PeerClientRoom(threading.Thread):
         for port in self.ports:
             self.udpClientSocket.sendto(notification.encode(), (self.ipToConnect, port))
         while True:
-            #os.system('cls')
-            #print(chat_log)
+            # os.system('cls')
+            # print(chat_log)
             msg = input('')
             if msg == ':q':
                 notification = bcolors.LIGHT_MAGENTA + self.username + " has left the chatroom" + bcolors.ENDC
@@ -445,8 +354,8 @@ class PeerClientRoom(threading.Thread):
                 colors_used.remove(random_color)
                 has_ended = True
                 break
-            msg = self.text_manipulation(msg)
-            #msg = self.username + "<gL0dDyYi!Z>" + msg #Delimiter: <gL0dDyYi!Z>
+            msg = self.text_manipulator.manipulate(msg)
+            # msg = self.username + "<gL0dDyYi!Z>" + msg #Delimiter: <gL0dDyYi!Z>
             chat_log = chat_log + bcolors.WHITE + self.username + bcolors.ENDC + ": " + msg + '\n'
             msg = random_color + self.username + bcolors.ENDC + "<gL0dDyYi!Z>" + msg  # Delimiter: <gL0dDyYi!Z>
             users_ports = db_obj.get_room_ports(self.room_name)
@@ -461,7 +370,6 @@ class PeerClientRoom(threading.Thread):
                         self.udpClientSocket.sendto(msg.encode(), (self.ipToConnect, port))
                     except:
                         db_obj.delete_room_online_participants_ports(port, self.room_name)
-
 
 
 class PeerServer(threading.Thread):
@@ -578,7 +486,6 @@ class PeerServer(threading.Thread):
                             elif s is not self.connectedPeerSocket and self.isChatRequested == 1:
                                 # sends a busy message to the peer that sends a chat request when this peer is
                                 # already chatting with someone else
-                                # print('XDDDDD LMAOOOOOOO')
                                 message = "BUSY"
                                 s.send(message.encode())
                                 # remove the peer from the inputs list so that it will not monitor this socket
@@ -629,7 +536,6 @@ class PeerServer(threading.Thread):
                 logging.error("ValueError: {0}".format(vErr))
 
 
-
 # Client side of peer
 class PeerClient(threading.Thread):
     global chat_log
@@ -655,48 +561,12 @@ class PeerClient(threading.Thread):
         # keeps if this client is ending the chat or not
         self.isEndingChat = False
         self.udpPortRoom = None
-
-
+        self.text_manipulator = TextManipulator()
 
         # TSL connection
         # context = ssl.create_default_context()
 
         # self.tcpClientSocket = context.wrap_socket(self.tcpClientSocket, server_hostname="192.168.1.7")
-
-    def text_manipulation(self, message):  # print("\033[1mThis is bold text.\033[0m")
-        edited_message = message[:]
-
-        matches = re.findall(r'(B\((.*?)\))', edited_message)
-        if matches:
-            for match in matches:
-                edited_message = edited_message.replace(match[0], f"\033[1m{match[1]}\033[0m")
-
-        matches = re.findall(r'(I\((.*?)\))', edited_message)
-        if matches:
-            for match in matches:
-                edited_message = edited_message.replace(match[0], f"\033[3m{match[1]}\033[0m")
-
-        matches = re.findall(r'(U\((.*?)\))', edited_message)
-        if matches:
-            for match in matches:
-                edited_message = edited_message.replace(match[0], f"\033[4m{match[1]}\033[0m")
-
-        matches = re.findall(r'(RED\((.*?)\))', edited_message)
-        if matches:
-            for match in matches:
-                edited_message = edited_message.replace(match[0], f"\033[93m{match[1]}\033[0m")
-
-        matches = re.findall(r'(GREEN\((.*?)\))', edited_message)
-        if matches:
-            for match in matches:
-                edited_message = edited_message.replace(match[0], f"\033[92m{match[1]}\033[0m")
-
-        matches = re.findall(r'(BLUE\((.*?)\))', edited_message)
-        if matches:
-            for match in matches:
-                edited_message = edited_message.replace(match[0], f"\033[94m{match[1]}\033[0m")
-
-        return edited_message
 
     # main method of the peer client thread
     def run(self):
@@ -759,7 +629,7 @@ class PeerClient(threading.Thread):
                     # message input prompt
                     messageSent = input('')
                     # messageSent = f'\033[3m{messageSent}\033[0m' ######WORKS
-                    messageSent = self.text_manipulation(messageSent)
+                    messageSent = self.text_manipulator.manipulate(messageSent)
                     chat_log = chat_log + bcolors.WHITE + self.username + bcolors.ENDC + ": " + messageSent + '\n'
                     # print(messageSent)
                     # sends the message to the connected peer, and logs it
@@ -863,7 +733,7 @@ class PeerClient(threading.Thread):
                 print(chat_log)
                 # input prompt for user to enter message
                 messageSent = input('')
-                messageSent = self.text_manipulation(messageSent)
+                messageSent = self.text_manipulator.manipulate(messageSent)
                 chat_log = chat_log + bcolors.WHITE + self.username + bcolors.ENDC + ": " + messageSent + '\n'
                 is_disconnected = False
                 try:
@@ -918,7 +788,7 @@ class peerMain:
         # ip address of the registry
         os.system('cls')
         while True:
-            self.registryName = input("\033[1mEnter IP address of registry: \033[0m")
+            self.registryName = registryIP
             if self.registryName == "q":
                 print("\033[92mProgram ended successfully.\033[0m")
                 exit()
@@ -957,8 +827,7 @@ class peerMain:
         # getting db instance
         self.db = DB()
         choice = "0"
-
-        
+        self.helloSender = None
         # TSL connection
         # context = ssl.create_default_context()
         # self.tcpClientSocket = context.wrap_socket(self.tcpClientSocket, server_hostname=self.registryName)
@@ -1035,7 +904,9 @@ class peerMain:
                     self.peerServer = PeerServer(self.loginCredentials[0], self.peerServerPort)
                     self.peerServer.start()
                     # hello message is sent to registry
-                    self.sendHelloMessage()
+                    self.helloSender = HelloSender(self.loginCredentials[0], self.registryName, self.registryUDPPort,
+                                                   self.udpClientSocket)
+                    self.helloSender.sendHelloMessage()
                 else:
                     continue
             # if choice is 3 and user is not logged in, then user is informed
@@ -1164,15 +1035,16 @@ class peerMain:
                     continue
                 response = self.get_room_peers(room_name)
                 self.add_port_to_room(room_name, udpPort)
-                
+
                 self.udpClientSocket_room = socket(AF_INET, SOCK_DGRAM)
-                
+
                 self.udpClientSocket_room.bind((registryIP, udpPort))
                 self.serverRoom = PeerServerRoom(registryIP, self.udpClientSocket_room, self.loginCredentials[0],
                                                  room_name)
                 self.serverRoom.start()
-                #self.serverRoom.join()
-                self.udpRoom = PeerClientRoom(registryIP, self.udpClientSocket_room, udpPort, response, self.loginCredentials[0],
+                # self.serverRoom.join()
+                self.udpRoom = PeerClientRoom(registryIP, self.udpClientSocket_room, udpPort, response,
+                                              self.loginCredentials[0],
                                               self.peerServer, room_name)
                 self.udpRoom.start()
                 self.udpRoom.join()
@@ -1623,20 +1495,17 @@ class peerMain:
 
     # function for sending hello message
     # a timer thread is used to send hello messages to udp socket of registry
-    def sendHelloMessage(self):
-        message = "HELLO " + self.loginCredentials[0]
-        logging.info("Send to " + self.registryName + ":" + str(self.registryUDPPort) + " -> " + message)
-        self.udpClientSocket.sendto(message.encode(), (self.registryName, self.registryUDPPort))
-        self.timer = threading.Timer(1, self.sendHelloMessage)
-        self.timer.start()
 
     # check if port is a number
-    def is_digit(self, port):
+    """def is_digit(self, port):
         try:
             int(port)
             return True
         except ValueError:
-            return False
+            return False"""
+
+
+
 
 
 # peer is started
