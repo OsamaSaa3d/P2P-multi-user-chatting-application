@@ -84,7 +84,7 @@ class RoomManager:
 
     def join_room(self, room_name, username):
         message = "JOIN-ROOM" + " " + room_name + " " + username
-        logging.info("Send to " + SYSTEM_IP + ":" + SYSTEM_PORT + " -> " + message)
+        logging.info("Send to " + SYSTEM_IP + ":" + str(SYSTEM_PORT) + " -> " + message)
         is_disconnected = False
         for i in range(3):
             try:
