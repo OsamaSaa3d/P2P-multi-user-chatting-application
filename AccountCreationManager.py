@@ -30,6 +30,7 @@ class AccountCreationManager:
                 print(bcolors.RED + "Connection timed out, trying to reconnect..." + bcolors.ENDC)
                 time.sleep(2)
         if is_disconnected:
+            raise Exception("Connection Error")
             os._exit(1)
         response = self.tcpClientSocket.recv(1024).decode()
         logging.info("Received from " + SYSTEM_IP + " -> " + response)

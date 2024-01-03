@@ -25,6 +25,22 @@ class AppManager:
         self.chatUsersManager = ChatUsersManager()
         # self.logoutManager = LogOutManager()
 
+    def main_menu_process(self, choice):
+        choice = self.switch_dict.get(choice, choice)
+        return choice
+
+    def main_menu_page(self):
+        print("\033[1m\033[4mChoose an option\033[0m: \033[0m\n")
+        print(
+            "1) Logout\n2) Search for a user\n3) Show online users\n4) Start a chat\n5) Create a chat room\n" +
+            "6) Join a chat room\n7) Show Available Rooms\n8) Room Chat\n")
+        choice = input('\033[94m>>> \033[0m')
+        # Check if the choice is in the dictionary, otherwise set it to the original value
+        return self.main_menu_process(choice)
+
+
+
+
     def available_rooms_page(self, username, peerServerPort):
         response = self.roomManager.get_available_rooms(username, peerServerPort)
         if response[0] == "no-available-rooms":
@@ -37,6 +53,14 @@ class AppManager:
             else:
                 print("\033[92mAvailable rooms are: \033[0m" + " ".join(available_rooms))
         time.sleep(2)
+
+    def start_chat_page(self):
+        username_for_chat = input("\033[96mUsername to chat with: \033[0m")
+        if username_for_chat == self.username:
+            print("\033[91mYou cannot chat with yourself.\033[0m")
+            time.sleep(2)
+            return None
+        return username_for_chat
 
     def online_users_page(self, username, peerServerPort):
         response = self.chatUsersManager.get_online_users(username, peerServerPort)
@@ -51,13 +75,7 @@ class AppManager:
                 print("\033[92mOnline users are: \033[0m" + " ".join(online_users))
             time.sleep(2)
 
-    def start_chat_page(self):
-        username_for_chat = input("\033[96mUsername to chat with: \033[0m")
-        if username_for_chat == self.username:
-            print("\033[91mYou cannot chat with yourself.\033[0m")
-            time.sleep(2)
-            return None
-        return username_for_chat
+
 
     def search_user_page(self):
         username_for_search = input("\033[96mUsername to be searched: \033[0m")
@@ -77,16 +95,7 @@ class AppManager:
             choice = input('\033[94m>>> \033[0m')
         return choice
 
-    def main_menu_page(self):
-        print("\033[1m\033[4mChoose an option\033[0m: \033[0m\n")
-        print(
-            "1) Logout\n2) Search for a user\n3) Show online users\n4) Start a chat\n5) Create a chat room\n" +
-            "6) Join a chat room\n7) Show Available Rooms\n8) Room Chat\n")
-        choice = input('\033[94m>>> \033[0m')
 
-        # Check if the choice is in the dictionary, otherwise set it to the original value
-        choice = self.switch_dict.get(choice, choice)
-        return choice
 
     def create_account_page(self):
         username = input("\033[1mUsername: \033[0m")

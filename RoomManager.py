@@ -1,26 +1,32 @@
 import logging
 from bcolors import bcolors
-from socket import *
+import socket
 import os
 import time
 from vars import SYSTEM_IP, SYSTEM_PORT
 from db import DB
 
+
 def login(username, password, peerServerPort):
+    response = login_request(username, password, peerServerPort)
+    return login_reaction(response)
+
+
+def login_request(username, password, peerServerPort):
     # a login message is composed and sent to registry
     # an integer is returned according to each response
     message = "LOGIN " + username + " " + password + " " + str(peerServerPort)
     logging.info("Send to " + SYSTEM_IP + ":" + str(SYSTEM_IP) + " -> " + message)
     is_disconnected = False
-    for i in range(99):
+    for i in range(10):
         try:
             if i != 0:
-                tcpClientSocket = socket(AF_INET, SOCK_STREAM)
+                tcpClientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 tcpClientSocket.connect((SYSTEM_IP, SYSTEM_PORT))
             tcpClientSocket.send(message.encode())
             break
         except:
-            if i == 89:
+            if i == 9:
                 print(bcolors.RED + "Connection to server failed, exiting..." + bcolors.ENDC)
                 is_disconnected = True
                 break
@@ -29,6 +35,10 @@ def login(username, password, peerServerPort):
     if is_disconnected:
         os._exit(1)
     response = tcpClientSocket.recv(1024).decode()
+    return response
+
+
+def login_reaction(response):
     logging.info("Received from " + SYSTEM_IP + " -> " + response)
     if response == "login-success":
         print("\033[92mLogged in successfully...\033[0m")
@@ -60,7 +70,7 @@ class RoomManager:
         for i in range(3):
             try:
                 if i != 0:
-                    self.tcpClientSocket = socket(AF_INET, SOCK_STREAM)
+                    self.tcpClientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                     self.tcpClientSocket.connect((SYSTEM_IP, SYSTEM_PORT))
                 self.tcpClientSocket.send(message.encode())
                 break
@@ -72,7 +82,7 @@ class RoomManager:
                 print(bcolors.RED + "Connection timed out, trying to reconnect..." + bcolors.ENDC)
                 time.sleep(2)
         if is_disconnected:
-            os._exit(1)
+            raise Exception("Connection Error")
         response = self.tcpClientSocket.recv(1024).decode()
         logging.info("Received from " + SYSTEM_IP + " -> " + response)
         if response == "create-room-success":
@@ -81,7 +91,7 @@ class RoomManager:
         elif response == "create-room-exist":
             print("\033[91mRoom already exists, choose another room name. Loading...\033[0m")
             time.sleep(2)
-
+        return response
     def join_room(self, room_name, username):
         message = "JOIN-ROOM" + " " + room_name + " " + username
         logging.info("Send to " + SYSTEM_IP + ":" + str(SYSTEM_PORT) + " -> " + message)
@@ -89,7 +99,7 @@ class RoomManager:
         for i in range(3):
             try:
                 if i != 0:
-                    self.tcpClientSocket = socket(AF_INET, SOCK_STREAM)
+                    self.tcpClientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                     self.tcpClientSocket.connect((SYSTEM_IP, SYSTEM_PORT))
                 self.tcpClientSocket.send(message.encode())
                 break
@@ -101,6 +111,7 @@ class RoomManager:
                 print(bcolors.RED + "Connection timed out, trying to reconnect..." + bcolors.ENDC)
                 time.sleep(2)
         if is_disconnected:
+            raise Exception("Connection Error")
             os._exit(1)
         response = self.tcpClientSocket.recv(1024).decode()
         logging.info("Received from " + SYSTEM_IP + " -> " + response)
@@ -113,6 +124,7 @@ class RoomManager:
         elif response == "join-room-already-member":
             print("\033[91mYou are already a member of this room. Loading...\033[0m")
             time.sleep(2)
+        return response
 
     def get_available_rooms(self, username, peerServerPort):
         message = "GET-AVAILABLE-ROOMS"
@@ -121,7 +133,7 @@ class RoomManager:
         for i in range(3):
             try:
                 if i != 0:
-                    self.tcpClientSocket = socket(AF_INET, SOCK_STREAM)
+                    self.tcpClientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                     self.tcpClientSocket.connect((SYSTEM_IP, SYSTEM_PORT))
                     dabe = DB()
                     pword = dabe.get_password(username)
@@ -137,7 +149,10 @@ class RoomManager:
                 time.sleep(2)
 
         if is_disconnected:
+            raise Exception("Connection Error")
             os._exit(1)
         response = self.tcpClientSocket.recv(1024).decode().split()
+        return self.get_available_rooms_reaction(response)
+    def get_available_rooms_reaction(self, response):
         logging.info("Received from " + SYSTEM_IP + " -> " + " ".join(response))
         return response

@@ -11,8 +11,6 @@ class DB:
         self.online_peers = self.db['online_peers']
         self.rooms = self.db['rooms']
         self.ports = self.db['ports']
-        #self.delete_all_ports()
-        #self.clear_online_participants_ports()
 
     def delete_all_ports(self):
         # Delete all documents in the 'ports' collection
@@ -87,7 +85,7 @@ class DB:
 
     def is_room_exist(self, roomname):
         # Use count_documents or estimated_document_count
-        count = self.db.rooms.count_documents({'room_name': roomname})
+        count =   self.db.rooms.count_documents({'room_name': roomname})
         if count > 0:
             return True
         return False
@@ -100,9 +98,9 @@ class DB:
         else:
             return False
 
-    def get_available_rooms(self):
-        rooms = self.db.rooms.find({})
-        return rooms
+    #def get_available_rooms(self):
+    #    rooms = self.db.rooms.find({})
+    #    return rooms
 
     def get_room_participants(self, room_name):
         if self.is_room_exist(room_name):
@@ -138,7 +136,12 @@ class DB:
 
     # retrieves the password for a given username
     def get_password(self, username):
-        return self.db.accounts.find_one({"username": username})["password"]
+
+        user_data = self.db.accounts.find_one({"username": username})
+        if user_data:
+            return user_data["password"]
+        else:
+            return None
 
     # checks if an account with the username online
     def is_account_online(self, username):
@@ -159,7 +162,10 @@ class DB:
     # retrieves the ip address and the port number of the username
     def get_peer_ip_port(self, username):
         res = self.db.online_peers.find_one({"username": username})
-        return res["ip"], res["port"]
+        if res:
+            return res["ip"], res["port"]
+        else:
+            return None, None
 
     # logs out all users in case of a server crash
     # logs out all online users and returns True if any users were logged out, False otherwise

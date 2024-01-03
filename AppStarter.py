@@ -1,23 +1,14 @@
 from vars import SYSTEM_IP, SYSTEM_PORT
 
-
-from socket import *
+import socket
 import time
 import re
 
-global registryIP
-registryIP = SYSTEM_IP
-
-
-global registryPort
-registryPort = SYSTEM_PORT
 
 class AppStarter:
     def __init__(self):
-        global registryIP
-        global registryPort
-        self.registryIP = registryIP
-        self.registryPort = registryPort
+        self.registryIP = SYSTEM_IP
+        self.registryPort = SYSTEM_PORT
         self.tcpClientSocket = None
 
     def get_registryPort(self):
@@ -27,21 +18,17 @@ class AppStarter:
         return self.tcpClientSocket
 
     def establish_connection(self):
-        self.tcpClientSocket = socket(AF_INET, SOCK_STREAM)
-        print("\033[96mConnecting, this might take a minute...")
         try:
+            self.tcpClientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            print("\033[96mConnecting, this might take a minute...")
             self.tcpClientSocket.connect((self.registryIP, self.registryPort))
             print("\033[92mConnected Successfully! Loading...\033[0m")
             time.sleep(2)
-        except:
-            pass
+        except Exception as e:
+            return str(e)
 
     def start_app(self):
-        #self.registryIP = input("\033[1mEnter IP address of registry: \033[0m")
-        #if self.registryIP == "q":
-        #    print("\033[92mProgram ended successfully.\033[0m")
-        #    exit()
-        while True:
+        for i in range(3):
             ip_address_pattern = re.compile(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$')
             if not ip_address_pattern.match(self.registryIP):
                 print("\033[91mInvalid IP address. Try again or enter q to quit.\033[0m")

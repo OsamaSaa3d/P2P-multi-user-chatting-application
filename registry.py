@@ -43,7 +43,9 @@ class ClientThread(threading.Thread):
                 message = self.tcpClientSocket.recv(1024).decode().split()
                 logging.info("Received from " + self.ip + ":" + str(self.port) + " -> " + " ".join(message))
                 #   JOIN    #
-                if message[0] == "JOIN":
+                if len(message) == 0:
+                    continue
+                elif message[0] == "JOIN":
                     # join-exist is sent to peer,
                     # if an account with this username already exists
                     if db.is_account_exist(message[1]):

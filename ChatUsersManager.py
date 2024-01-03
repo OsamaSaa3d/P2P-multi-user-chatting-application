@@ -73,7 +73,10 @@ class ChatUsersManager:
                 time.sleep(2)
 
         if is_disconnected:
+            raise Exception("Connection Error")
             os._exit(1)
-        response = tcpClientSocket.recv(1024).decode().split()
-        logging.info("Received from " + SYSTEM_IP + " -> " + " ".join(response))
-        return response
+
+        response = tcpClientSocket.recv(1024).decode()
+        msg = response.split()
+        logging.info("Received from " + SYSTEM_IP + " -> " + " ".join(msg))
+        return msg
