@@ -500,7 +500,7 @@ class peerMain:
         self.db = DB()
         choice = "0"
         self.helloSender = None
-        self.appManager = AppManager()
+        self.appManager = AppManager(self.tcpClientSocket)
         # TSL connection
         # context = ssl.create_default_context()
         # self.tcpClientSocket = context.wrap_socket(self.tcpClientSocket, server_hostname=self.registryName)

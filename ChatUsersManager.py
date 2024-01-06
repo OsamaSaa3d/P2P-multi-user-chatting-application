@@ -48,8 +48,8 @@ def login(username, password, peerServerPort):
 
 
 class ChatUsersManager:
-    def __init__(self):
-        pass
+    def __init__(self, tcpSock):
+        self.tcpClientSocket = tcpSock
     def get_online_users(self, username, peerServerPort):
         message = "GET-ONLINE-USERS"
         logging.info("Send to " + SYSTEM_IP + ":" + str(SYSTEM_PORT) + " -> " + message)
@@ -57,12 +57,12 @@ class ChatUsersManager:
         for i in range(3):
             try:
                 if i != 0:
-                    tcpClientSocket = socket(AF_INET, SOCK_STREAM)
-                    tcpClientSocket.connect((SYSTEM_IP, SYSTEM_PORT))
+                    self.tcpClientSocket = socket(AF_INET, SOCK_STREAM)
+                    self.tcpClientSocket.connect((SYSTEM_IP, SYSTEM_PORT))
                     dabe = DB()
                     pword = dabe.get_password(username)
                     login(username, pword, peerServerPort)
-                tcpClientSocket.send(message.encode())
+                self.tcpClientSocket.send(message.encode())
                 break
             except:
                 if i == 2:
@@ -76,7 +76,7 @@ class ChatUsersManager:
             raise Exception("Connection Error")
             os._exit(1)
 
-        response = tcpClientSocket.recv(1024).decode()
+        response = self.tcpClientSocket.recv(1024).decode()
         msg = response.split()
         logging.info("Received from " + SYSTEM_IP + " -> " + " ".join(msg))
         return msg

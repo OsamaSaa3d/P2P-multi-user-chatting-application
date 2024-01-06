@@ -8,7 +8,7 @@ from ChatUsersManager import ChatUsersManager
 
 
 class AppManager:
-    def __init__(self):
+    def __init__(self, tcpSock):
         self.switch_dict = {
             "1": "3",
             "2": "4",
@@ -19,10 +19,11 @@ class AppManager:
             "7": "9",
             "8": "10",
         }
+        self.tcpClientSocket = tcpSock
         self.username = None
-        self.accountCreationManager = AccountCreationManager()
-        self.roomManager = RoomManager()
-        self.chatUsersManager = ChatUsersManager()
+        self.accountCreationManager = AccountCreationManager(self.tcpClientSocket)
+        self.roomManager = RoomManager(self.tcpClientSocket)
+        self.chatUsersManager = ChatUsersManager(self.tcpClientSocket)
         # self.logoutManager = LogOutManager()
 
     def main_menu_process(self, choice):
@@ -68,7 +69,7 @@ class AppManager:
             print("\033[91mNo online users...\033[0m")
         elif response[0] == "get-online-users-success":
             # list of online users returned includes user who asks for the list, we remove him from the list
-            online_users = [name for name in response[1:] if name != self.username]
+            online_users = [name for name in response[1:] if name != username]
             if len(online_users) == 0:
                 print("\033[91mNo online users...\033[0m")
             else:

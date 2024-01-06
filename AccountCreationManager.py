@@ -5,8 +5,8 @@ from socket import *
 import logging
 import os
 class AccountCreationManager:
-    def __init__(self):
-        self.tcpClientSocket = None
+    def __init__(self, tcpSock):
+        self.tcpClientSocket = tcpSock
 
     def create_account_handler(self, username, password_hash):
         # join message to create an account is composed and sent to registry

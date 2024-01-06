@@ -60,8 +60,8 @@ def login_reaction(response):
 
 class RoomManager:
 
-    def __init__(self):
-        pass
+    def __init__(self,tcpSock):
+        self.tcpClientSocket = tcpSock
 
     def create_room(self, room_name, username):
         message = "CREATE-ROOM" + " " + room_name + " " + username
@@ -83,6 +83,7 @@ class RoomManager:
                 time.sleep(2)
         if is_disconnected:
             raise Exception("Connection Error")
+            os._exit(1)
         response = self.tcpClientSocket.recv(1024).decode()
         logging.info("Received from " + SYSTEM_IP + " -> " + response)
         if response == "create-room-success":
