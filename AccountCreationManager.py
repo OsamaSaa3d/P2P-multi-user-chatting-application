@@ -8,7 +8,7 @@ class AccountCreationManager:
     def __init__(self):
         self.tcpClientSocket = None
 
-    def create_account_page(self, username, password_hash):
+    def create_account_handler(self, username, password_hash):
         # join message to create an account is composed and sent to registry
         # if response is success then informs the user for account creation
         # if response is exist then informs the user for account existence

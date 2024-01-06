@@ -20,7 +20,7 @@ class TestCreateAccountPage(unittest.TestCase):
         self.mock_tcp_socket.recv.return_value = b'join-success'
 
         # Call the method under test
-        self.your_instance.create_account_page('username', 'password_hash')
+        self.your_instance.create_account_handler('username', 'password_hash')
 
         # Check if the appropriate success message is printed
         # You may need to use mock_print or capture the printed output for more complex scenarios
@@ -30,7 +30,7 @@ class TestCreateAccountPage(unittest.TestCase):
         self.mock_tcp_socket.recv.return_value = b'join-exist'
 
         # Call the method under test
-        self.your_instance.create_account_page('Welson', '')
+        self.your_instance.create_account_handler('Welson', '')
 
         # Check if the appropriate exist message is printed
         # You may need to use mock_print or capture the printed output for more complex scenarios

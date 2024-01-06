@@ -108,7 +108,7 @@ class AppManager:
             if password == "CANCEL":  # Check with Ramzyyyy
                 break
         password_hash = self.hash_password(password)
-        self.accountCreationManager.create_account_page(username, password_hash)
+        self.accountCreationManager.create_account_handler(username, password_hash)
         return username, password_hash
 
     def create_room_page(self, username):

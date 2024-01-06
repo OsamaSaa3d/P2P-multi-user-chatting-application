@@ -52,7 +52,7 @@ class peerMain:
             if choice == "1" and not self.isOnline:
                 os.system('cls')
                 time.sleep(0.2)
-                self.appManager.create_account_page()
+                self.appManager.create_account_handler()
                 #username, password_hash = self.appManager.create_account_page()
                 # if password != 'CANCEL':
                 #self.createAccount(username, password_hash)
