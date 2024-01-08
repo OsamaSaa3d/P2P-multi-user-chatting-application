@@ -474,9 +474,29 @@ class peerMain:
         global registryIP
         # ip address of the registry
         os.system('cls')
+
+        with open('performance_test.txt', 'w') as file:
+            # Write lines to the file
+            file.write("This is a performance test for all the functionalities in the peer-to-peer chat application.\n")
+            file.write("Under the supervision and guidance of Professor Ayman Bahaa\n")
+            file.write("By: George Welson\n")
+            file.write("    Kareem Ramzy\n")
+            file.write("    Osama Saad\n")
+            file.write("    Youssef Barakat\n")
+            file.write("\n")
+            file.write("\n")
+            file.write("The following are the results of the performance test:\n")
+            file.write("A peer has started")
+
+
         self.registryName = registryIP
         self.app_starter = AppStarter()
+        before = time.time()
         self.app_starter.start_app()
+        after = time.time()
+        elapsed_time = after - before
+        with open('performance_test.txt', 'a') as file:
+            file.write("A peer has detected a registry and connected with it using a tcp connection in "+ str(round(elapsed_time,3)) + " seconds\n")
         self.tcpClientSocket = self.app_starter.get_tcpClientSocket()
         self.registryPort = self.app_starter.get_registryPort()
 
@@ -513,16 +533,40 @@ class peerMain:
             time.sleep(0.2)
             # menu selection prompt
             if not self.isOnline:
+                before = time.time()
                 choice = self.appManager.start_menu_page()
+                after = time.time()
+                elapsed_time = after - before
+                with open('performance_test.txt', 'a') as file:
+                    file.write("The app has launched the start menu and prompted the user to create account, login or "
+                               + "exit the app in :" + str(round(elapsed_time,3)) + " seconds\n")
+                    file.write("This process depends on user input\n")
+
             else:
+                before = time.time()
                 choice = self.appManager.main_menu_page()
+                after = time.time()
+                elapsed_time = after - before
+                with open('performance_test.txt', 'a') as file:
+                    file.write("The app has launched the main menu, set the user status to online and prompted the user "
+                               + "to search for a user, see online users, "
+                               + "start a chat, create a room, join a room, see available rooms, wait for other users "
+                               + "to initiate a chat or logout in :" + str(round(elapsed_time,3)) + " seconds\n")
+                    file.write("This process depends on user input\n")
 
             # if choice is 1, creates an account with the username
             # and password entered by the user
             if choice == "1" and not self.isOnline:
                 os.system('cls')
                 time.sleep(0.2)
+                before = time.time()
                 self.appManager.create_account_page()
+                after = time.time()
+                elapsed_time = after - before
+                with open('performance_test.txt', 'a') as file:
+                    file.write("The app has launched the create account menu and prompted the user to enter a username "
+                               + "and password in :" + str(round(elapsed_time,3)) + " seconds\n")
+                    file.write("This process depends on user input\n")
                 #username, password_hash = self.appManager.create_account_page()
                 # if password != 'CANCEL':
                 #self.createAccount(username, password_hash)
@@ -531,7 +575,14 @@ class peerMain:
             elif choice == "2" and not self.isOnline:
                 os.system('cls')
                 time.sleep(0.2)
+                before = time.time()
                 username, password_hash = self.appManager.login_page()
+                after = time.time()
+                elapsed_time = after - before
+                with open('performance_test.txt', 'a') as file:
+                    file.write("The app has launched the login menu and prompted the user to enter a username "
+                               + "and password in :" + str(round(elapsed_time,3)) + " seconds\n")
+                    file.write("This process depends on user input\n")
                 # peerServerPort = self.get_random_port()
                 peerServerPort = self.get_available_port_new()
                 status = self.login(username, password_hash, peerServerPort)
@@ -556,7 +607,12 @@ class peerMain:
                 # if choice is 3 and user is logged in, then user is logged out
                 # and peer variables are set, and server and client sockets are closed
                 else:
+                    before = time.time()
                     self.logout()
+                    after = time.time()
+                    elapsed_time = after - before
+                    with open('performance_test.txt', 'a') as file:
+                        file.write("The app has logged out the user in :" + str(round(elapsed_time,3)) + " seconds\n")
                     self.isOnline = False
                     self.username = None
                     self.peerServer.isOnline = False
@@ -572,9 +628,15 @@ class peerMain:
             elif choice == "4" and self.isOnline:
                 os.system('cls')
                 time.sleep(0.2)
+                before = time.time()
                 username_for_search = self.appManager.search_user_page()
-
                 searchStatus = self.searchUser(username_for_search)
+                after = time.time()
+                elapsed_time = after - before
+                with open('performance_test.txt', 'a') as file:
+                    file.write("The app has launched the search user menu and prompted the user to enter a username "
+                               + "in :" + str(round(elapsed_time, 3)) + " seconds\n")
+                    file.write("This process depends on user input\n")
                 # if user is found its ip address is shown to user
                 if searchStatus is not None and searchStatus != 0:
                     print("IP address of " + username_for_search + " is " + searchStatus)
@@ -585,15 +647,29 @@ class peerMain:
             elif choice == "5" and self.isOnline:
                 os.system('cls')
                 time.sleep(0.2)
+                before = time.time()
                 self.appManager.online_users_page(self.username, self.peerServerPort)
+                after = time.time()
+                elapsed_time = after - before
+                with open('performance_test.txt', 'a') as file:
+                    file.write("The app has checked the database for currently online peers and showed them to the user"
+                               + " in :" + str(round(elapsed_time,3)) + " seconds\n")
+                    file.write("This process does not depend on user input\n")
 
             # if choice is 5 and user is online, then user is asked
             # to enter the username of the user that is wanted to be chatted
             elif choice == "6" and self.isOnline:
                 os.system('cls')
+                before = time.time()
                 time.sleep(0.2)
                 username_for_chat = self.appManager.start_chat_page()
                 searchStatus = self.searchUser(username_for_chat)
+                after = time.time()
+                elapsed_time = after - before
+                with open('performance_test.txt', 'a') as file:
+                    file.write("The app has launched the start chat menu, prompted the user to enter a username and "
+                               "opened a chat " + "in :" + str(round(elapsed_time,3)) + " seconds\n")
+                    file.write("This process depends on user input\n")
                 print(searchStatus)
                 # if searched user is found, then its ip address and port number is retrieved
                 # and a client thread is created
@@ -611,19 +687,41 @@ class peerMain:
             # main process waits for the client thread to finish its chat
             elif choice == "7" and self.isOnline:
                 os.system('cls')
+                before = time.time()
                 time.sleep(0.2)
                 self.appManager.create_room_page(self.username)
+                after = time.time()
+                elapsed_time = after - before
+                with open('performance_test.txt', 'a') as file:
+                    file.write("The app has launched the create room page, prompted the user to enter a room name and "
+                               "created a room " + "in :" + str(round(elapsed_time,3)) + " seconds\n")
+                    file.write("This process depends on user input\n")
             elif choice == "8" and self.isOnline:
                 os.system('cls')
                 time.sleep(0.2)
+                before = time.time()
                 self.appManager.join_room_page(self.username)
+                after = time.time()
+                elapsed_time = after - before
+                with open('performance_test.txt', 'a') as file:
+                    file.write("The app has launched the join room page, prompted the user to enter a room name and "
+                               "joined a room " + "in :" + str(round(elapsed_time,3)) + " seconds\n")
+                    file.write("This process depends on user input\n")
             elif choice == "9" and self.isOnline:
                 os.system('cls')
                 time.sleep(0.2)
+                before = time.time()
                 self.appManager.available_rooms_page(self.username, self.peerServerPort)
+                after = time.time()
+                elapsed_time = after - before
+                with open('performance_test.txt', 'a') as file:
+                    file.write("The app has checked the database for currently available rooms and showed them to the "
+                               + "user in :" + str(round(elapsed_time,3)) + " seconds\n")
+                    file.write("This process does not depend on user input\n")
             elif choice == "10" and self.isOnline:
                 os.system('cls')
                 time.sleep(0.2)
+                before = time.time()
                 room_name = input("\033[96mEnter the name of the room: \033[0m")
                 udpPort = self.get_available_port_new()
                 db = DB()
@@ -648,6 +746,12 @@ class peerMain:
                 # self.serverRoom.join()
                 self.udpRoom = PeerClientRoom(registryIP, self.udpClientSocket_room, udpPort, response,
                                               self.username, self.peerServer, room_name)
+                after = time.time()
+                elapsed_time = after - before
+                with open('performance_test.txt', 'a') as file:
+                    file.write("The app has launched the chat room page, prompted the user to enter a message " +
+                               " or wait to receive a message in :" + str(round(elapsed_time,3)) + " seconds\n")
+                    file.write("This process depends on user input\n")
                 self.udpRoom.start()
                 self.udpRoom.join()
 

@@ -5,7 +5,7 @@ from socket import *
 import logging
 import os
 class AccountCreationManager:
-    def __init__(self, tcpSock):
+    def __init__(self, tcpSock=None):
         self.tcpClientSocket = tcpSock
 
     def create_account_handler(self, username, password_hash):

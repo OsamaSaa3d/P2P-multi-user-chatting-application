@@ -8,7 +8,7 @@ from ChatUsersManager import ChatUsersManager
 
 
 class AppManager:
-    def __init__(self, tcpSock):
+    def __init__(self, tcpSock=None):
         self.switch_dict = {
             "1": "3",
             "2": "4",
@@ -109,7 +109,13 @@ class AppManager:
             if password == "CANCEL":  # Check with Ramzyyyy
                 break
         password_hash = self.hash_password(password)
+        before = time.time()
         self.accountCreationManager.create_account_handler(username, password_hash)
+        after = time.time()
+        elapsed_time = after - before
+        with open('performance_test.txt', 'a') as file:
+            file.write(f"Account creation took {elapsed_time} seconds\n")
+            file.write("This process does not depend on user input\n")
         return username, password_hash
 
     def create_room_page(self, username):
@@ -152,7 +158,13 @@ class AppManager:
         username = input("\033[1mUsername: \033[0m")
         password = pwinput.pwinput(prompt='\033[1mPassword: \033[0m', mask='*')
         # asks for the port number for server's tcp socket
+        before = time.time()
         password_hash = self.hash_password(password)
+        after = time.time()
+        elapsed_time = after - before
+        with open('performance_test.txt', 'a') as file:
+            file.write(f"Password hashing took {round(elapsed_time,3)} seconds\n")
+            file.write("This process does not depend on user input\n")
         return username, password_hash
 
     def hash_password(self, password):
